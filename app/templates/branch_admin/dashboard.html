@@ -1,0 +1,25 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Branch dashboard{% endblock %}
+{% block content %}
+{% if geo_missing %}<div class="alert alert-warning">Set your branch location so teachers and students can check in. <a class="alert-link" href="{{ url_for('attendance.location') }}">Set location</a></div>{% endif %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ stats.students }}</div><div class="stat-label">Active students</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ stats.teachers }}</div><div class="stat-label">Teachers</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ stats.staff }}</div><div class="stat-label">Staff</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ stats.pending }}</div><div class="stat-label">Pending admissions</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ stats.batches }}</div><div class="stat-label">Active batches</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ stats.today }}</div><div class="stat-label">Lectures today ({{ stats.running }} running{% if stats.problems %}, <span class="text-danger">{{ stats.problems }} late/missed</span>{% endif %})</div></div></div>
+</div>
+<div class="panel-card">
+  <h2>Quick actions</h2>
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-em" href="{{ url_for('admissions.new_admission') }}"><i class="bi bi-person-plus"></i> New admission</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admissions.list_admissions') }}">Review pending ({{ stats.pending }})</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('batches.new') }}">New batch</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('attendance.live') }}">Live board</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('timetable.index') }}">Timetable</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('teachers.new') }}">Add teacher</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('staff.new') }}">Add staff</a>
+  </div>
+</div>
+{% endblock %}

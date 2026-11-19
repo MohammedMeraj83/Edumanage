@@ -1,0 +1,72 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Fees · {{ s.full_name }}{% endblock %}
+{% block content %}
+{% set is_admin = current_user.role_name in ['owner','branch_admin'] %}
+<div class="page-head"><div><h1>{{ s.full_name }}</h1><div class="text-muted small mt-1">{{ s.student_code }} · {{ s.class_name }} · {{ s.branch.name }} · Parent <a href="tel:{{ s.guardian_phone }}">{{ s.guardian_phone }}</a></div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm"><a class="btn btn-outline-secondary" href="{{ url_for('students.detail', student_id=s.id) }}">Student profile</a>
+  {% if current_user.has_permission('payments.create') and totals.balance > 0 %}<a class="btn btn-em" href="{{ url_for('fees.collect', student_id=s.id) }}"><i class="bi bi-cash-coin"></i> Collect fee</a>{% endif %}</div></div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3">{{ totals.billed|inr }}</div><div class="stat-label">Total fees</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3">{{ totals.paid|inr }}</div><div class="stat-label">Paid</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3">{{ totals.balance|inr }}</div><div class="stat-label">Balance</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3 text-danger">{{ totals.overdue|inr }}</div><div class="stat-label">Overdue</div></div></div>
+</div>
+
+{% for e in no_dues %}
+<div class="alert alert-warning">
+  <div class="fw-semibold">No fees created yet for {{ e.batch.name }} ({{ e.fee_amount|inr }} {{ e.batch.fee_label|lower }}).</div>
+  {% if current_user.has_permission('fees.create') %}
+  <form method="post" action="{{ url_for('fees.generate', student_id=s.id, enrollment_id=e.id) }}" class="row g-2 mt-1">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-12 col-md-5"><select class="form-select" name="pay_style" aria-label="How will they pay">{% for v, l in pay_styles %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-3"><input class="form-control" name="discount" type="number" step="0.01" min="0" placeholder="Discount ₹ (full pay)" aria-label="Discount"></div>
+    <div class="col-6 col-md-2"><button class="btn btn-em w-100">Create fees</button></div>
+  </form>{% endif %}
+</div>
+{% endfor %}
+
+<div class="panel-card mb-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2"><h2 class="m-0">Fee dues</h2>
+    {% if current_user.has_permission('fees.create') %}<button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#chargeBox"><i class="bi bi-plus-lg"></i> Add charge</button>{% endif %}</div>
+  {% if current_user.has_permission('fees.create') %}
+  <div class="collapse mb-3" id="chargeBox">
+    <form method="post" action="{{ url_for('fees.charge', student_id=s.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-12 col-md-5"><input class="form-control" name="label" maxlength="200" placeholder="What for? (Late fee, Books, Test series…)" required aria-label="Charge for"></div>
+      <div class="col-6 col-md-2"><input class="form-control" name="amount" type="number" step="0.01" min="0.01" placeholder="₹" required aria-label="Amount"></div>
+      <div class="col-6 col-md-3"><input class="form-control" type="date" name="due_date" value="{{ today.isoformat() }}" aria-label="Due date"></div>
+      <div class="col-12 col-md-2"><button class="btn btn-em w-100">Add</button></div></form>
+  </div>{% endif %}
+  {% for d in dues %}
+  <div class="doc-row" style="align-items:flex-start">
+    <div class="name">
+      <strong class="{{ 'text-decoration-line-through text-muted' if d.status == 'cancelled' }}">{{ d.label }}</strong>
+      <div class="small text-muted">Due {{ d.due_date.strftime('%d %b %Y') }}{% if d.overdue %} · <span class="text-danger">{{ (today - d.due_date).days }} days overdue</span>{% endif %}
+        · {{ d.amount|inr }}{% if d.discount > 0 %} − {{ d.discount|inr }} discount{% endif %}{% if d.paid > 0 %} · paid {{ d.paid|inr }}{% endif %}</div>
+      {% if d.cancel_reason %}<div class="small text-muted">Cancelled: {{ d.cancel_reason }}</div>{% endif %}
+      {% if is_admin and d.status in ['pending','partial'] %}
+      <details class="inline mt-1"><summary>Discount / cancel</summary>
+        <form method="post" action="{{ url_for('fees.discount', due_id=d.id) }}" class="row g-2 mb-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="col-5"><input class="form-control" name="discount" type="number" step="0.01" min="0" value="{{ d.discount }}" aria-label="Discount"></div>
+          <div class="col-7"><input class="form-control" name="reason" maxlength="200" placeholder="Reason" value="{{ d.discount_reason or '' }}" aria-label="Reason"></div>
+          <div class="col-12"><button class="btn btn-sm btn-outline-secondary">Save discount</button></div></form>
+        {% if d.paid == 0 %}<form method="post" action="{{ url_for('fees.cancel_due', due_id=d.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="col-8"><input class="form-control" name="reason" maxlength="200" placeholder="Reason to cancel this due" required aria-label="Reason to cancel"></div>
+          <div class="col-4"><button class="btn btn-sm btn-outline-danger w-100">Cancel due</button></div></form>{% endif %}
+      </details>{% endif %}
+    </div>
+    <div class="text-end"><div class="money fw-bold">{{ d.balance|inr }}</div>{{ m.status_pill(d.status) }}</div>
+  </div>
+  {% else %}<p class="text-muted mb-0">No fee dues yet. They are created when the student joins a batch.</p>{% endfor %}
+</div>
+
+<div class="panel-card">
+  <h2>Payments</h2>
+  {% for p in payments %}
+    <div class="doc-row"><div class="name"><a href="{{ url_for('fees.receipt', payment_id=p.id) }}"><strong>{{ p.receipt_no }}</strong></a>
+      <div class="small text-muted">{{ p.paid_on.strftime('%d %b %Y') }} · {{ p.mode_label }}{% if p.refunded_amount > 0 %} · refunded {{ p.refunded_amount|inr }}{% endif %}{% if p.status == 'cancelled' %} · <span class="text-danger">cancelled</span>{% endif %}</div></div>
+      <div class="money fw-bold {{ 'text-decoration-line-through text-muted' if p.status == 'cancelled' }}">{{ p.amount|inr }}</div></div>
+  {% else %}<p class="text-muted mb-0">No payments yet.</p>{% endfor %}
+</div>
+{% endblock %}

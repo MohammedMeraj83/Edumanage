@@ -1,0 +1,32 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Expenses{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Expenses</h1><div class="text-muted small mt-1">Total in this period: <strong class="money">{{ total|inr }}</strong></div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('finance.categories') }}">Categories</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('finance.expenses_xlsx', **args) }}"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    {% if current_user.has_permission('expenses.create') %}<a class="btn btn-em" href="{{ url_for('finance.expense_new') }}"><i class="bi bi-plus-lg"></i> Add expense</a>{% endif %}
+  </div></div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-6 col-md-2"><input class="form-control" type="date" name="from" value="{{ start.isoformat() }}" aria-label="From"></div>
+  <div class="col-6 col-md-2"><input class="form-control" type="date" name="to" value="{{ end.isoformat() }}" aria-label="To"></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="category" aria-label="Category"><option value="">All categories</option>{% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if cat == c.id }}>{{ c.name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="status" aria-label="Status"><option value="active" {{ 'selected' if status == 'active' }}>Active</option><option value="cancelled" {{ 'selected' if status == 'cancelled' }}>Cancelled</option><option value="all" {{ 'selected' if status == 'all' }}>All</option></select></div>
+  <div class="col-12 col-md-3"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search description, vendor" aria-label="Search"></div>
+  {% if branches %}<div class="col-12 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Branch</th><th class="text-end">Amount</th></tr></thead>
+  <tbody>{% for e in page.items %}
+    <tr><td data-label="Date">{{ e.expense_date.strftime('%d %b %Y') }}</td><td data-label="Category">{{ e.category.name }}</td>
+      <td data-label="Details"><a href="{{ url_for('finance.expense_detail', expense_id=e.id) }}">{{ e.description }}</a>{% if e.vendor %}<div class="small text-muted">{{ e.vendor }}</div>{% endif %}{% if e.status == 'cancelled' %} <span class="badge text-bg-danger">Cancelled</span>{% endif %}</td>
+      <td data-label="Branch">{{ e.branch.name }}</td>
+      <td data-label="Amount" class="text-end money fw-bold {{ 'text-decoration-line-through text-muted' if e.status == 'cancelled' }}">{{ e.amount|inr }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{{ m.pager(page, 'finance.expenses', args) }}
+{% else %}{{ m.empty_state("No expenses in this period", "Add rent, electricity, stationery and other costs here.", url_for('finance.expense_new') if current_user.has_permission('expenses.create') else None, "Add expense") }}{% endif %}
+{% endblock %}

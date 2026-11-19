@@ -1,0 +1,55 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% set bpn = request.blueprint %}
+{% block page_title %}{{ cfg.plural }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ cfg.plural }}</h1>
+  {% if current_user.has_permission(cfg.perm ~ '.create') %}<a class="btn btn-em" href="{{ url_for(bpn ~ '.new') }}"><i class="bi bi-plus-lg"></i> Add {{ cfg.label|lower }}</a>{% endif %}
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-5"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, ID or phone" aria-label="Search"></div>
+  <div class="col-6 col-md-3">
+    <select class="form-select" name="status" aria-label="Status">
+      <option value="all" {{ 'selected' if status == 'all' }}>All</option>
+      {% for st in statuses %}<option value="{{ st }}" {{ 'selected' if status == st }}>{{ st|capitalize }}</option>{% endfor %}
+    </select>
+  </div>
+  {% if branches %}
+  <div class="col-6 col-md-2">
+    <select class="form-select" name="branch" aria-label="Branch">
+      <option value="">All branches</option>
+      {% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Name</th><th>{{ 'Subjects' if kind == 'teacher' else 'Designation' }}</th><th>Phone</th><th>Branch</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for o in page.items %}
+    <tr>
+      <td class="person-td" data-label="Name">
+        <div class="person-cell">
+          {{ m.avatar(url_for(bpn ~ '.photo', obj_id=o.id) if o.photo else None, o.full_name, 40) }}
+          <div><strong>{{ o.full_name }}</strong><div class="small text-muted">{{ o.employee_code }}</div></div>
+        </div>
+      </td>
+      <td data-label="{{ 'Subjects' if kind == 'teacher' else 'Designation' }}">{{ o.title_text }}</td>
+      <td data-label="Phone">{{ o.phone }}</td>
+      <td data-label="Branch">{{ o.branch.name }}</td>
+      <td data-label="Status">{{ m.status_pill(o.status) }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for(bpn ~ '.detail', obj_id=o.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, bpn ~ '.index', args) }}
+{% else %}
+  {{ m.empty_state("No " ~ cfg.plural|lower ~ " found", "Change the filters or add someone new.", url_for(bpn ~ '.new') if current_user.has_permission(cfg.perm ~ '.create') else None, "Add " ~ cfg.label|lower) }}
+{% endif %}
+{% endblock %}

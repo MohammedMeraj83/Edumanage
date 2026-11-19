@@ -1,0 +1,16 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit room' if item else 'New room' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit ' ~ item.name if item else 'Add a room' }}</h1></div>
+<form method="post" class="panel-card" style="max-width:560px" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {% if form.branch_id %}{{ m.field(form.branch_id, "col-12", cls="form-select") }}{% endif %}
+    {{ m.field(form.name, "col-12 col-md-8", placeholder="e.g. Room 2") }}
+    {{ m.field(form.capacity, "col-12 col-md-4", type="number", min=1, inputmode="numeric") }}
+    {{ m.check(form.is_active) }}
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm"><button class="btn btn-em">Save</button><a class="btn btn-outline-secondary" href="{{ url_for('academics.rooms') }}">Cancel</a></div>
+</form>
+{% endblock %}

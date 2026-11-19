@@ -1,0 +1,74 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Application {{ adm.reference }}{% endblock %}
+{% block content %}
+{% set can_edit = current_user.has_permission('admissions.edit') %}
+<div class="page-head">
+  <div class="d-flex align-items-center gap-3">
+    {{ m.avatar(url_for('admissions.photo', admission_id=adm.id) if adm.photo else None, adm.full_name, 56) }}
+    <div>
+      <h1>{{ adm.full_name }}</h1>
+      <div class="text-muted small mt-1">{{ adm.reference }} · {{ m.status_pill(adm.status) }}{% if adm.admission_no %} · {{ adm.admission_no }}{% endif %}</div>
+    </div>
+  </div>
+  {% if can_edit and adm.status == 'pending' %}
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admissions.edit_admission', admission_id=adm.id) }}"><i class="bi bi-pencil"></i> Edit</a>
+    <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#rejectBox">Reject</button>
+    <form method="post" action="{{ url_for('admissions.approve', admission_id=adm.id) }}" class="m-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-em w-100" data-confirm="A student record, student ID and admission number will be created for {{ adm.full_name }}." data-title="Approve admission?" data-ok-label="Approve" data-ok-class="btn-em"><i class="bi bi-check2-circle"></i> Approve</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% if can_edit and adm.status == 'pending' %}
+<div class="collapse mb-3" id="rejectBox">
+  <form method="post" action="{{ url_for('admissions.reject', admission_id=adm.id) }}" class="panel-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="form-label" for="reason">Reason for rejecting (optional)</label>
+    <input class="form-control mb-3" id="reason" name="reason" maxlength="255">
+    <button class="btn btn-danger">Reject application</button>
+  </form>
+</div>
+{% endif %}
+
+{% if adm.status == 'approved' and adm.student %}
+<div class="alert alert-success">Approved on {{ adm.decided_at|localtime }}. <a class="alert-link" href="{{ url_for('students.detail', student_id=adm.student.id) }}">Open student {{ adm.student.student_code }}</a></div>
+{% elif adm.status == 'rejected' %}
+<div class="alert alert-secondary">Rejected on {{ adm.decided_at|localtime }}{% if adm.rejection_reason %}: {{ adm.rejection_reason }}{% endif %}</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6"><div class="panel-card h-100">
+    <h2>Student</h2>
+    <dl class="kv">
+      <dt>Date of birth</dt><dd>{{ adm.dob.strftime('%d %b %Y') }}</dd>
+      <dt>Gender</dt><dd>{{ adm.gender }}</dd>
+      <dt>Blood group</dt><dd>{{ adm.blood_group or '—' }}</dd>
+      <dt>Class</dt><dd>{{ adm.class_name }}</dd>
+      <dt>Previous school</dt><dd>{{ adm.previous_school or '—' }}</dd>
+      <dt>Phone</dt><dd>{{ adm.phone or '—' }}</dd>
+      <dt>Email</dt><dd>{{ adm.email or '—' }}</dd>
+      <dt>Address</dt><dd>{{ adm.address or '—' }}{% if adm.city %}, {{ adm.city }}{% endif %}{% if adm.state %}, {{ adm.state }}{% endif %} {{ adm.pincode or '' }}</dd>
+    </dl>
+  </div></div>
+  <div class="col-12 col-lg-6"><div class="panel-card h-100">
+    <h2>Parent / guardian and application</h2>
+    <dl class="kv">
+      <dt>Father</dt><dd>{{ adm.father_name or '—' }}</dd>
+      <dt>Mother</dt><dd>{{ adm.mother_name or '—' }}</dd>
+      <dt>Guardian phone</dt><dd><a href="tel:{{ adm.guardian_phone }}">{{ adm.guardian_phone }}</a></dd>
+      <dt>Guardian email</dt><dd>{{ adm.guardian_email or '—' }}</dd>
+      <dt>Branch</dt><dd>{{ adm.branch.name }}</dd>
+      <dt>Session</dt><dd>{{ adm.session.name }}</dd>
+      <dt>Entered by</dt><dd>{{ adm.creator.full_name if adm.creator else '—' }} on {{ adm.created_at|localtime('%d %b %Y') }}</dd>
+      <dt>Notes</dt><dd>{{ adm.notes or '—' }}</dd>
+    </dl>
+  </div></div>
+  <div class="col-12">
+    {% with kind='admission', owner_id=adm.id, can_edit=(can_edit and adm.status == 'pending') %}{% include "students/_documents.html" %}{% endwith %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Teacher dashboard{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Welcome, {{ current_user.full_name }}</h1>{% if me %}<div class="text-muted small">{{ me.employee_code }} · {{ me.branch.name }}</div>{% endif %}</div>
+{% if not me %}<div class="panel-card"><p class="text-muted mb-0">Your teacher profile is not linked yet. Ask your branch admin.</p></div>{% else %}
+<div class="panel-card mb-3">
+  <h2>Today's lectures ({{ today_name }})</h2>
+  {% for s, key, label, css, can_start in rows %}
+    <div class="doc-row">
+      <div class="name"><strong>{{ s.start_at|localtime('%I:%M %p') }} – {{ s.end_at|localtime('%I:%M %p') }}</strong> · {{ s.batch.name }}
+        <div class="small text-muted">{% if s.room %}{{ s.room.name }} · {% endif %}{{ counts[s.batch_id].total }} students · <span class="badge text-bg-{{ css }}">{{ label }}</span></div></div>
+      <a class="btn btn-sm {{ 'btn-em' if can_start else 'btn-outline-secondary' }}" href="{{ url_for('attendance.session_view', session_id=s.id) }}">{{ 'Start' if can_start else 'Open' }}</a>
+    </div>
+  {% else %}<p class="text-muted mb-0">No lectures today.</p>{% endfor %}
+  <div class="form-text mt-2">Start a lecture by scanning the branch QR (or open it here). You must be inside the tuition.</div>
+</div>
+{% if pending_papers %}
+<div class="panel-card mb-3">
+  <h2>Marks to enter</h2>
+  {% for p in pending_papers %}
+    <div class="doc-row"><div class="name"><strong>{{ p.exam.name }}</strong> · {{ p.batch.name }}
+      <div class="small text-muted">Paper on {{ p.exam_date.strftime('%d %b %Y') }}</div></div>
+      <a class="btn btn-sm btn-em" href="{{ url_for('exams.marks', paper_id=p.id) }}">Enter marks</a></div>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="panel-card">
+  <h2>My batches</h2>
+  {% for b in batches %}
+    <div class="doc-row"><div class="name"><a href="{{ url_for('batches.detail', batch_id=b.id) }}"><strong>{{ b.name }}</strong></a>
+      <div class="small text-muted">{{ schedule_text(b) }} · {{ counts[b.id].total }} students ({{ counts[b.id].male }} M / {{ counts[b.id].female }} F)</div></div></div>
+  {% else %}<p class="text-muted mb-0">No batches assigned yet.</p>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

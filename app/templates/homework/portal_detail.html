@@ -1,0 +1,16 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ hw.title }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ hw.title }}</h1>
+  <div class="text-muted small mt-1">{{ hw.batch.subject.name }} · {{ hw.batch.teacher.full_name }} · Given {{ hw.assigned_on.strftime('%d %b %Y') }}</div></div>
+  <a class="btn btn-outline-secondary" href="{{ back_url }}">Back</a></div>
+<div class="panel-card">
+  <div class="mb-2">Last date <strong>{{ hw.due_date.strftime('%A, %d %B %Y') }}</strong> <span class="badge text-bg-{{ due_css }}">{{ due }}</span></div>
+  {% if hw.description %}<div style="white-space:pre-wrap">{{ hw.description }}</div>{% else %}<p class="text-muted mb-0">No extra details.</p>{% endif %}
+  {% if hw.attachment %}<div class="mt-3"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('homework.file', hw_id=hw.id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> {{ hw.attachment_name }}</a></div>{% endif %}
+  <hr>
+  <div><span class="text-muted">Teacher's check:</span>
+    {% if check %}<span class="badge text-bg-{{ status_colors.get(check.status, 'secondary') }}">{{ status_labels.get(check.status, check.status) }}</span>{% if check.remark %} · {{ check.remark }}{% endif %}
+    {% else %}<span class="badge text-bg-light border">Not checked yet</span>{% endif %}</div>
+</div>
+{% endblock %}

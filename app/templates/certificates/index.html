@@ -1,0 +1,32 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Certificates{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Certificates</h1>
+  {% if current_user.has_permission('certificates.create') %}<a class="btn btn-em" href="{{ url_for('certificates.new') }}"><i class="bi bi-plus-lg"></i> Issue certificate</a>{% endif %}</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" name="q" value="{{ q }}" placeholder="Student name, ID or certificate no." aria-label="Search"></div>
+  <div class="col-6 col-md-3"><select class="form-select" name="type" aria-label="Type"><option value="">All types</option>{% for k, label in types %}<option value="{{ k }}" {{ 'selected' if cert_type == k }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="status" aria-label="Status"><option value="">All</option><option value="issued" {{ 'selected' if status == 'issued' }}>Issued</option><option value="cancelled" {{ 'selected' if status == 'cancelled' }}>Cancelled</option></select></div>
+  {% if branches %}<div class="col-6 col-md-2"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Number</th><th>Student</th><th>Type</th><th>Date</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for c in page.items %}
+    <tr>
+      <td data-label="Number" class="small">{{ c.certificate_no }}</td>
+      <td class="person-td" data-label="Student"><strong>{{ c.student.full_name }}</strong><div class="small text-muted">{{ c.student.student_code }} · {{ c.branch.name }}</div></td>
+      <td data-label="Type">{{ type_label(c.cert_type) }}</td>
+      <td data-label="Date">{{ c.issue_date.strftime('%d %b %Y') }}</td>
+      <td data-label="Status">{% if c.status == 'issued' %}<span class="badge text-bg-success">Issued</span>{% else %}<span class="badge text-bg-danger">Cancelled</span>{% endif %}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('certificates.detail', cert_id=c.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'certificates.index', args) }}
+{% else %}{{ m.empty_state("No certificates yet", "Issue a bonafide, character, completion, transfer or achievement certificate.", url_for('certificates.new') if current_user.has_permission('certificates.create') else None, "Issue certificate") }}{% endif %}
+{% endblock %}

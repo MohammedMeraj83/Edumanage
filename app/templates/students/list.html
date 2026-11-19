@@ -1,0 +1,60 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Students{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Students</h1>
+  {% if current_user.has_permission('admissions.create') %}<a class="btn btn-em" href="{{ url_for('admissions.new_admission') }}"><i class="bi bi-plus-lg"></i> New admission</a>{% endif %}
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, student ID, admission no. or phone" aria-label="Search"></div>
+  <div class="col-6 col-md-2">
+    <select class="form-select" name="status" aria-label="Status">
+      <option value="all" {{ 'selected' if status == 'all' }}>All</option>
+      {% for st in statuses %}<option value="{{ st }}" {{ 'selected' if status == st }}>{{ st|capitalize }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-6 col-md-2">
+    <select class="form-select" name="class_name" aria-label="Class">
+      <option value="">All classes</option>
+      {% for c in classes %}<option value="{{ c }}" {{ 'selected' if class_name == c }}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  {% if branches %}
+  <div class="col-12 col-md-2">
+    <select class="form-select" name="branch" aria-label="Branch">
+      <option value="">All branches</option>
+      {% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Student</th><th>Class</th><th>Branch</th><th>Guardian phone</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for s in page.items %}
+    <tr>
+      <td class="person-td" data-label="Student">
+        <div class="person-cell">
+          {{ m.avatar(url_for('students.photo', student_id=s.id) if s.photo else None, s.full_name, 40) }}
+          <div><strong>{{ s.full_name }}</strong><div class="small text-muted">{{ s.student_code }} · {{ s.admission_no }}</div></div>
+        </div>
+      </td>
+      <td data-label="Class">{{ s.class_name }}</td>
+      <td data-label="Branch">{{ s.branch.name }}</td>
+      <td data-label="Guardian phone">{{ s.guardian_phone }}</td>
+      <td data-label="Status">{{ m.status_pill(s.status) }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('students.detail', student_id=s.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'students.list_students', args) }}
+{% else %}
+  {{ m.empty_state("No students found", "Students appear here after an admission is approved.", url_for('admissions.list_admissions'), "View admissions") }}
+{% endif %}
+{% endblock %}

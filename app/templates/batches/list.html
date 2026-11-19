@@ -1,0 +1,35 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Batches{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Batches</h1>
+  {% if current_user.has_permission('batches.create') %}<a class="btn btn-em" href="{{ url_for('batches.new') }}"><i class="bi bi-plus-lg"></i> New batch</a>{% endif %}</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Batch name" aria-label="Search"></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="course" aria-label="Course"><option value="">All courses</option>{% for c in courses %}<option value="{{ c.id }}" {{ 'selected' if course_id == c.id }}>{{ c.name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="status" aria-label="Status"><option value="all" {{ 'selected' if status == 'all' }}>All</option>{% for st in statuses %}<option value="{{ st }}" {{ 'selected' if status == st }}>{{ st|capitalize }}</option>{% endfor %}</select></div>
+  {% if branches %}<div class="col-12 col-md-2"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Batch</th><th>Teacher</th><th>Timing</th><th>Students</th><th>M / F</th><th>Fee</th><th></th></tr></thead>
+  <tbody>
+  {% for b in page.items %}{% set c = counts[b.id] %}
+    <tr>
+      <td class="person-td" data-label="Batch"><strong>{{ b.name }}</strong><div class="small text-muted">{{ b.branch.name }}{% if b.status == 'closed' %} · Closed{% endif %}</div></td>
+      <td data-label="Teacher">{{ b.teacher.full_name }}</td>
+      <td data-label="Timing" class="small">{{ schedule_text(b) }}</td>
+      <td data-label="Students">{{ c.total }} / {{ b.capacity }}</td>
+      <td data-label="M / F">{{ c.male }} / {{ c.female }}</td>
+      <td data-label="Fee">₹{{ '{:,.0f}'.format(b.fee_amount) }} <span class="text-muted small">{{ b.fee_label|lower }}</span></td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('batches.detail', batch_id=b.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'batches.index', args) }}
+{% else %}{{ m.empty_state("No batches found", "Create a batch for a subject, with a teacher and a fee.", url_for('batches.new') if current_user.has_permission('batches.create') else None, "New batch") }}{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Academic sessions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Academic sessions</h1>
+  <a class="btn btn-em" href="{{ url_for('settings.session_new') }}"><i class="bi bi-plus-lg"></i> Add session</a>
+</div>
+{% if sessions %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Session</th><th>Starts</th><th>Ends</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for s in sessions %}
+    <tr>
+      <td data-label="Session"><strong>{{ s.name }}</strong></td>
+      <td data-label="Starts">{{ s.start_date.strftime('%d %b %Y') }}</td>
+      <td data-label="Ends">{{ s.end_date.strftime('%d %b %Y') }}</td>
+      <td data-label="Status">{% if s.is_current %}<span class="badge text-bg-success">Current</span>{% else %}<span class="badge text-bg-secondary">Past / upcoming</span>{% endif %}</td>
+      <td class="actions text-end">
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('settings.session_edit', session_id=s.id) }}">Edit</a>
+        {% if not s.is_current %}
+        <form method="post" action="{{ url_for('settings.session_set_current', session_id=s.id) }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-secondary" data-confirm="New admissions, fees and exams will use {{ s.name }}. Records of the old session stay available." data-title="Make {{ s.name }} current?" data-ok-label="Make current" data-ok-class="btn-em">Make current</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  {{ m.empty_state("No sessions yet", "Add the first academic session to get started.", url_for('settings.session_new'), "Add session") }}
+{% endif %}
+{% endblock %}

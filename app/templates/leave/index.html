@@ -1,0 +1,47 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Leave{% endblock %}
+{% block content %}
+{% set is_admin = role in ['owner', 'branch_admin'] %}
+<div class="page-head"><h1>{{ 'Leave requests' if is_admin else 'My leave' }}</h1>
+  {% if branches %}<form method="get" class="m-0"><select class="form-select" name="branch" onchange="this.form.submit()" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></form>{% endif %}</div>
+
+{% if not is_admin %}
+<form method="post" action="{{ url_for('leave.new') }}" class="panel-card mb-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2>Apply for leave</h2>
+  <div class="row g-3">
+    {% if role == 'parent' %}<div class="col-12 col-md-4"><label class="form-label" for="student_id">Child</label><select class="form-select" id="student_id" name="student_id" required>{% for c in children %}<option value="{{ c.id }}">{{ c.full_name }}</option>{% endfor %}</select></div>{% endif %}
+    <div class="col-6 col-md-3"><label class="form-label" for="from_date">From</label><input class="form-control" type="date" id="from_date" name="from_date" min="{{ today.isoformat() }}" value="{{ today.isoformat() }}" required></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="to_date">To</label><input class="form-control" type="date" id="to_date" name="to_date" min="{{ today.isoformat() }}" value="{{ today.isoformat() }}" required></div>
+    <div class="col-12 col-md-6"><label class="form-label" for="reason">Reason</label><input class="form-control" id="reason" name="reason" maxlength="255" required></div>
+  </div>
+  <button class="btn btn-em mt-3">Send request</button>
+</form>
+{% endif %}
+
+{% for r in items %}
+<div class="panel-card mb-2">
+  <div class="d-flex justify-content-between gap-2">
+    <div>
+      <div class="fw-bold">{{ (r.teacher.full_name ~ ' (teacher)') if r.kind == 'teacher' else (r.student.full_name ~ ' (student)') }}</div>
+      <div class="small text-muted">{{ r.from_date.strftime('%d %b') }}{% if r.to_date != r.from_date %} – {{ r.to_date.strftime('%d %b %Y') }}{% else %} {{ r.from_date.strftime('%Y') }}{% endif %} · {{ r.branch.name }} · by {{ r.requester.full_name }}</div>
+      <div class="mt-1">{{ r.reason }}</div>
+      {% if r.decision_note %}<div class="small text-muted mt-1">Note: {{ r.decision_note }}</div>{% endif %}
+    </div>
+    {{ m.status_pill(r.status) }}
+  </div>
+  {% if r.status == 'pending' %}
+    {% if is_admin %}
+    <form method="post" action="{{ url_for('leave.decide', leave_id=r.id) }}" class="row g-2 mt-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-12 col-md-6"><input class="form-control" name="note" maxlength="255" placeholder="Note (optional)" aria-label="Note"></div>
+      <div class="col-6 col-md-3"><button class="btn btn-em w-100" name="action" value="approve">Approve</button></div>
+      <div class="col-6 col-md-3"><button class="btn btn-outline-danger w-100" name="action" value="reject">Reject</button></div></form>
+    {% elif r.requested_by == current_user.id %}
+    <form method="post" action="{{ url_for('leave.cancel', leave_id=r.id) }}" class="mt-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm btn-outline-secondary" data-confirm="The request will be withdrawn." data-title="Withdraw request?" data-ok-label="Withdraw">Withdraw</button></form>
+    {% endif %}
+  {% endif %}
+</div>
+{% else %}{{ m.empty_state("No leave requests", "Requests will show here.", None, None) }}{% endfor %}
+{% endblock %}

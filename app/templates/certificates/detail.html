@@ -1,0 +1,28 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ cert.certificate_no }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ type_label(cert.cert_type) }}</h1>
+    <div class="text-muted small mt-1">{{ cert.certificate_no }} · {{ cert.student.full_name }} ({{ cert.student.student_code }}) · {{ cert.branch.name }} ·
+      {% if cert.status == 'issued' %}<span class="badge text-bg-success">Issued</span>{% else %}<span class="badge text-bg-danger">Cancelled</span>{% endif %}</div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('certificates.index') }}">Back</a>
+    <a class="btn btn-em" href="{{ url_for('certificates.pdf', cert_id=cert.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>
+</div>
+{% if cert.status == 'cancelled' %}<div class="alert alert-danger">Cancelled on {{ cert.cancelled_at|localtime }}. Reason: {{ cert.cancel_reason }}</div>{% endif %}
+<div class="panel-card mb-3">
+  <div class="text-center fw-bold fs-5 mb-1">{{ title }}</div>
+  <div class="text-center small text-muted mb-3">{{ cert.certificate_no }} · {{ cert.issue_date.strftime('%d %B %Y') }}</div>
+  {% for p in paragraphs %}<p>{{ p }}</p>{% endfor %}
+</div>
+{% if cert.status == 'issued' and current_user.has_permission('certificates.delete') %}
+<form method="post" action="{{ url_for('certificates.cancel', cert_id=cert.id) }}" class="panel-card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2>Cancel this certificate</h2>
+  <div class="form-text mb-2">Use this if it has a mistake. It stays on record, its QR code shows “cancelled”, and you can issue a corrected one.</div>
+  <div class="d-flex gap-2 flex-wrap"><input class="form-control" style="max-width:26rem" name="reason" maxlength="200" placeholder="Reason" aria-label="Reason" required>
+    <button class="btn btn-outline-danger" data-confirm="This certificate will be marked cancelled. This cannot be undone." data-title="Cancel certificate?" data-ok-label="Cancel certificate">Cancel certificate</button></div>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Study materials{% endblock %}
+{% block content %}
+{% if not student %}<div class="panel-card"><p class="text-muted mb-0">Your student profile is not linked yet.</p></div>{% else %}
+<div class="page-head"><div><h1>Study materials</h1><div class="text-muted small">{{ student.full_name }}</div></div></div>
+<form class="row g-2 mb-3" method="get"><div class="col-8 col-md-4"><input class="form-control" name="q" value="{{ q }}" placeholder="Search title or subject" aria-label="Search"></div>
+  <div class="col-4 col-md-auto"><button class="btn btn-outline-secondary w-100">Search</button></div></form>
+{% for x in items %}
+<div class="panel-card mb-2">
+  <div class="d-flex justify-content-between align-items-start gap-2">
+    <div><div class="fw-bold">{{ x.title }}</div>
+      <div class="small text-muted">{{ x.batch.subject.name }} · {{ x.batch.teacher.full_name }} · {{ x.created_at.strftime('%d %b %Y') }}</div>
+      {% if x.description %}<div class="small mt-1">{{ x.description }}</div>{% endif %}</div>
+    <div class="text-end text-nowrap">
+      {% if x.kind == 'link' %}<a class="btn btn-sm btn-em" href="{{ x.url }}" target="_blank" rel="noopener noreferrer">Open link</a>
+      {% else %}<a class="btn btn-sm btn-em" href="{{ url_for('materials.file', mid=x.id) }}" target="_blank" rel="noopener"><i class="bi bi-download"></i> Download</a><div class="small text-muted mt-1">{{ human_size(x.size) }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% else %}{{ m.empty_state("No materials yet", "Your teachers have not shared anything yet.", None, None) }}{% endfor %}
+{% endif %}
+{% endblock %}

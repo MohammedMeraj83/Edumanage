@@ -1,0 +1,18 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit exam' if exam else 'New exam' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ exam.name if exam else 'New exam' }}</h1><div class="text-muted small mt-1">{{ branch.name }}</div></div></div>
+<form method="post" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {{ m.field(form.name, "col-12 col-md-6", placeholder="e.g. Unit Test 1") }}
+    {{ m.field(form.exam_type, "col-12 col-md-6", cls="form-select") }}
+    {{ m.field(form.start_date, "col-6 col-md-3") }}
+    {{ m.field(form.end_date, "col-6 col-md-3") }}
+    {{ m.field(form.note, "col-12 col-md-6") }}
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm"><button class="btn btn-em">{{ 'Save changes' if exam else 'Create exam' }}</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('exams.detail', exam_id=exam.id) if exam else url_for('exams.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

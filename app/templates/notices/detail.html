@@ -1,0 +1,18 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ notification.notice.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ notification.notice.title }}</h1>
+  <a class="btn btn-outline-secondary" href="{{ url_for('notifications.inbox') }}">Back to notifications</a>
+</div>
+<article class="panel-card">
+  <div class="text-muted small mb-3">{{ notification.created_at|localtime }}{% if notification.notice.branch %} · {{ notification.notice.branch.name }}{% else %} · All branches{% endif %}</div>
+  <div class="text-break" style="white-space:pre-wrap">{{ notification.notice.body }}</div>
+  {% if not notification.read_at %}
+  <form method="post" action="{{ url_for('notifications.mark_read', notification_id=notification.id) }}" class="mt-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-em">Mark as read</button>
+  </form>
+  {% else %}<div class="mt-4 small text-success"><i class="bi bi-check2"></i> Read {{ notification.read_at|localtime }}</div>{% endif %}
+</article>
+{% endblock %}

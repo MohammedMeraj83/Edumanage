@@ -1,0 +1,121 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% set key, label, css = state %}
+{% block page_title %}Lecture{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ s.batch.name }}</h1>
+    <div class="text-muted small mt-1">{{ s.lecture_date.strftime('%A, %d %b %Y') }} · {{ s.start_at|localtime('%I:%M %p') }} – {{ s.end_at|localtime('%I:%M %p') }} ({{ s.minutes }} min) · {{ s.teacher.full_name }}{% if s.room %} · {{ s.room.name }}{% endif %}</div>
+  </div>
+  <span class="badge text-bg-{{ css }} fs-6">{{ label }}</span>
+</div>
+
+<div class="panel-card mb-3">
+  <dl class="kv mb-0">
+    <dt>Teacher arrived</dt>
+    <dd>{% if s.checkin_at %}{{ s.checkin_at|localtime('%I:%M %p') }}{% if late %} <span class="text-danger">— {{ late }} min late</span>{% else %} — on time{% endif %} · {{ s.checkin_distance_m }} m from branch{% else %}Not yet{% endif %}</dd>
+    {% if s.ended_at %}<dt>Class ended</dt><dd>{{ s.ended_at|localtime('%I:%M %p') }}</dd>{% endif %}
+    {% if s.note %}<dt>Note</dt><dd>{{ s.note }}</dd>{% endif %}
+  </dl>
+
+  {% if can_checkin %}
+  <form method="post" action="{{ url_for('attendance.checkin', session_id=s.id) }}" class="geo-form mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">
+    <button class="btn btn-em w-100 py-3"><i class="bi bi-geo-alt"></i> Start class (I am at the tuition)</button>
+    <div class="geo-status alert alert-warning mt-2 mb-0 d-none"></div>
+    <div class="form-text">Opens {{ rules('teacher_checkin_opens_min') }} minutes before the lecture. Your phone's location is checked.</div>
+  </form>
+  {% elif current_user.role_name == 'teacher' and not s.checkin_at and key == 'upcoming' %}
+  <p class="text-muted mt-3 mb-0">You can start this lecture from {{ opens|localtime('%I:%M %p') }}.</p>
+  {% endif %}
+
+  <div class="d-flex flex-wrap gap-2 mt-3 stack-sm">
+    {% if current_user.role_name == 'teacher' and s.checkin_at and not s.ended_at %}
+    <form method="post" action="{{ url_for('attendance.end', session_id=s.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger w-100" data-confirm="Mark this lecture as finished now?" data-title="End lecture?" data-ok-label="End lecture">End lecture</button></form>
+    {% endif %}
+    {% if current_user.role_name in ['owner','branch_admin'] %}
+    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#cancelBox">{{ 'Restore lecture' if s.cancelled else 'Cancel lecture' }}</button>
+    {% endif %}
+  </div>
+  {% if current_user.role_name in ['owner','branch_admin'] %}
+  <div class="collapse mt-3" id="cancelBox">
+    <form method="post" action="{{ url_for('attendance.cancel_session', session_id=s.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-12 col-md-9"><input class="form-control" name="note" maxlength="200" placeholder="Reason (holiday, teacher unwell…)" aria-label="Reason"></div>
+      <div class="col-12 col-md-3"><button class="btn btn-danger w-100">{{ 'Restore' if s.cancelled else 'Cancel it' }}</button></div></form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="panel-card">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h2 class="m-0">Students ({{ rows|length }})</h2>
+    {% if mode %}<div class="small"><span class="badge text-bg-danger" id="absentCount">0</span> absent</div>{% endif %}
+  </div>
+  {% if block_reason and not mode %}<div class="alert alert-info">{{ block_reason }}</div>{% endif %}
+  {% if mode == 'admin' and s.attendance_submitted_at %}<div class="alert alert-warning py-2">You are editing saved attendance. The change is recorded in the audit log.</div>{% endif %}
+
+  <form method="post" action="{{ url_for('attendance.mark', session_id=s.id) }}" class="{{ 'geo-form' if mode == 'teacher' else '' }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if mode == 'teacher' %}<input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">{% endif %}
+    {% if mode %}<div class="d-flex gap-2 mb-3"><button type="button" class="btn btn-sm btn-outline-success" data-all="present">Everyone present</button><button type="button" class="btn btn-sm btn-outline-danger" data-all="absent">Everyone absent</button></div>{% endif %}
+
+    <div class="roster-grid">
+    {% for st, rec, leave in rows %}
+      {% set cur = rec.status if rec else ('leave' if leave else 'present') %}
+      <div class="stu-card" data-status="{{ cur }}">
+        <div class="stu-photo">{{ m.avatar(url_for('students.photo', student_id=st.id) if st.photo else None, st.full_name, 92) }}</div>
+        <div class="stu-name">{{ st.full_name }}</div>
+        <div class="small text-muted">{{ st.student_code }} · {{ st.class_name }}</div>
+        <div class="small">{% if rec and rec.verified %}<span class="text-success"><i class="bi bi-geo-alt-fill"></i> checked in</span>{% endif %}{% if leave %} <span class="badge text-bg-secondary">On leave</span>{% endif %}</div>
+        {% if mode %}
+        <div class="stu-actions" role="group" aria-label="Attendance of {{ st.full_name }}">
+          <input type="radio" class="btn-check" name="status_{{ st.id }}" id="s{{ st.id }}present" value="present" {{ 'checked' if cur == 'present' }}>
+          <label class="btn btn-sm btn-outline-success" for="s{{ st.id }}present">Present</label>
+          <input type="radio" class="btn-check" name="status_{{ st.id }}" id="s{{ st.id }}late" value="late" {{ 'checked' if cur == 'late' }}>
+          <label class="btn btn-sm btn-outline-warning" for="s{{ st.id }}late">Late</label>
+          {% if leave or cur == 'leave' %}<input type="radio" class="btn-check" name="status_{{ st.id }}" id="s{{ st.id }}leave" value="leave" {{ 'checked' if cur == 'leave' }}>
+          <label class="btn btn-sm btn-outline-secondary" for="s{{ st.id }}leave">Leave</label>{% endif %}
+          <input type="radio" class="btn-check" name="status_{{ st.id }}" id="s{{ st.id }}absent" value="absent" {{ 'checked' if cur == 'absent' }}>
+          <label class="btn btn-danger-soft w-100" for="s{{ st.id }}absent"><i class="bi bi-x-circle"></i> Absent</label>
+        </div>
+        {% else %}<span class="badge text-bg-{{ {'present':'success','late':'warning','absent':'danger','leave':'secondary'}.get(cur) }}">{{ cur|capitalize if rec else 'Not marked' }}</span>{% endif %}
+      </div>
+    {% else %}<p class="text-muted mb-0">No students are enrolled in this batch.</p>{% endfor %}
+    </div>
+
+    {% if mode and rows %}
+      <button class="btn btn-em w-100 py-2 mt-3">{{ 'Save changes' if s.attendance_submitted_at else 'Save attendance' }}</button>
+      <div class="geo-status alert alert-warning mt-2 mb-0 d-none"></div>
+      <div class="form-text">Everyone is present by default. Tap <strong>Absent</strong> under the photo of anyone who has not come.{% if mode == 'teacher' %} Your location is checked when you save.{% endif %}</div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+  (function () {
+    var cards = document.querySelectorAll(".stu-card");
+    function recount() {
+      var n = 0; cards.forEach(function (c) { if (c.dataset.status === "absent") n++; });
+      var el = document.getElementById("absentCount"); if (el) el.textContent = n;
+    }
+    cards.forEach(function (c) {
+      c.querySelectorAll("input.btn-check").forEach(function (r) {
+        r.addEventListener("change", function () { c.dataset.status = r.value; recount(); });
+      });
+    });
+    document.querySelectorAll("[data-all]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        cards.forEach(function (c) {
+          var r = c.querySelector("input.btn-check[value=" + b.dataset.all + "]");
+          if (r) { r.checked = true; c.dataset.status = b.dataset.all; }
+        });
+        recount();
+      });
+    });
+    recount();
+  })();
+</script>
+{% endblock %}

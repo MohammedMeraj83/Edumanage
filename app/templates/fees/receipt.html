@@ -1,0 +1,61 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Receipt{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3 no-print stack-sm">
+  <a class="btn btn-em" href="{{ url_for('fees.receipt_pdf', payment_id=p.id) }}" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
+  <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+  {% if staff %}<a class="btn btn-outline-secondary" href="{{ url_for('fees.student', student_id=p.student_id) }}">Student fees</a>{% endif %}
+</div>
+
+<div class="receipt">
+  <div class="head">
+    {% if institute_logo %}<img src="{{ url_for('media', folder='institute', filename=institute_logo) }}" alt="" style="height:48px;object-fit:contain">{% endif %}
+    <div class="h5 fw-bold mb-0">{{ institute_name }}</div>
+    <div class="small text-muted">{{ p.branch.name }}{% if p.branch.address %} · {{ p.branch.address }}{% endif %}{% if p.branch.city %}, {{ p.branch.city }}{% endif %}</div>
+    {% if p.branch.phone %}<div class="small text-muted">{{ p.branch.phone }}</div>{% endif %}
+    <div class="fw-semibold mt-2">FEE RECEIPT</div>
+    {% if p.status == 'cancelled' %}<div class="stamp mt-1">CANCELLED</div>{% endif %}
+  </div>
+  <dl class="kv mb-3">
+    <dt>Receipt no.</dt><dd><strong>{{ p.receipt_no }}</strong></dd>
+    <dt>Date</dt><dd>{{ p.paid_on.strftime('%d %b %Y') }}</dd>
+    <dt>Student</dt><dd>{{ p.student.full_name }} · {{ p.student.student_code }} · {{ p.student.class_name }}</dd>
+    <dt>Paid by</dt><dd>{{ p.mode_label }}{% if p.reference %} · Ref {{ p.reference }}{% endif %}</dd>
+    {% if p.note %}<dt>Note</dt><dd>{{ p.note }}</dd>{% endif %}
+  </dl>
+  <table class="table table-sm mb-2">
+    <thead><tr><th>Particulars</th><th class="text-end">Amount</th></tr></thead>
+    <tbody>
+      {% for a in p.allocations %}<tr><td>{{ a.due.label }}</td><td class="text-end money">{{ a.amount|inr }}</td></tr>{% endfor %}
+      <tr class="fw-bold"><td>Total received</td><td class="text-end money">{{ p.amount|inr }}</td></tr>
+      {% if p.refunded_amount > 0 %}<tr><td>Refunded</td><td class="text-end money">{{ p.refunded_amount|inr }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <p class="mb-1">Balance still due for this student: <strong class="money">{{ balance|inr }}</strong></p>
+  <p class="small text-muted mb-0">Received by {{ p.receiver.full_name }}. Computer-generated receipt.{% if p.status == 'cancelled' %} Cancelled: {{ p.cancel_reason }}{% endif %}</p>
+</div>
+
+{% if p.refunds %}
+<div class="panel-card mt-3 no-print"><h2>Refunds</h2>
+  {% for r in p.refunds %}<div class="doc-row"><div class="name"><strong>{{ r.refund_no }}</strong><div class="small text-muted">{{ r.refunded_on.strftime('%d %b %Y') }} · {{ r.reason }} · by {{ r.processor.full_name }}</div></div><div class="money fw-bold">{{ r.amount|inr }}</div></div>{% endfor %}
+</div>
+{% endif %}
+
+{% if current_user.role_name in ['owner','branch_admin'] and p.status == 'active' %}
+<div class="panel-card mt-3 no-print">
+  <h2>Corrections</h2>
+  <details class="inline mb-2"><summary>Refund money to the parent</summary>
+    <form method="post" action="{{ url_for('fees.refund', payment_id=p.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-6 col-md-3"><input class="form-control" name="amount" type="number" step="0.01" min="0.01" max="{{ p.net_amount }}" placeholder="Amount ₹" required aria-label="Refund amount"></div>
+      <div class="col-6 col-md-3"><select class="form-select" name="mode" aria-label="Refund paid by">{% for v, l in [('cash','Cash'),('upi','UPI'),('bank','Bank transfer'),('cheque','Cheque')] %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-12 col-md-4"><input class="form-control" name="reason" maxlength="200" placeholder="Reason" required aria-label="Reason"></div>
+      <div class="col-12 col-md-2"><button class="btn btn-outline-danger w-100" data-confirm="The refund is recorded and the dues become payable again." data-title="Refund this money?" data-ok-label="Refund">Refund</button></div></form></details>
+  {% if p.refunded_amount == 0 %}
+  <details class="inline"><summary>Cancel this payment (entered by mistake)</summary>
+    <form method="post" action="{{ url_for('fees.cancel_payment', payment_id=p.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-12 col-md-9"><input class="form-control" name="reason" maxlength="200" placeholder="Why is it cancelled?" required aria-label="Reason"></div>
+      <div class="col-12 col-md-3"><button class="btn btn-outline-danger w-100" data-confirm="The receipt stays on record as CANCELLED and the dues open again." data-title="Cancel this payment?" data-ok-label="Cancel payment">Cancel payment</button></div></form></details>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

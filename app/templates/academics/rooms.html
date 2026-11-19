@@ -1,0 +1,16 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Rooms{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Rooms</h1><a class="btn btn-em" href="{{ url_for('academics.room_new') }}"><i class="bi bi-plus-lg"></i> Add room</a></div>
+{% if items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Room</th><th>Branch</th><th>Seats</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for r in items %}
+    <tr><td data-label="Room"><strong>{{ r.name }}</strong></td><td data-label="Branch">{{ r.branch.name }}</td><td data-label="Seats">{{ r.capacity or '—' }}</td>
+      <td data-label="Status">{{ m.status_badge(r.is_active) }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('academics.room_edit', room_id=r.id) }}">Edit</a></td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}{{ m.empty_state("No rooms yet", "Add your classrooms so the timetable can avoid double booking.", url_for('academics.room_new'), "Add room") }}{% endif %}
+{% endblock %}

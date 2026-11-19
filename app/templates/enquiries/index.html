@@ -1,0 +1,40 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Enquiries{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Enquiries</h1>
+  {% if current_user.has_permission('enquiries.create') %}<a class="btn btn-em" href="{{ url_for('enquiries.new') }}"><i class="bi bi-plus-lg"></i> Add enquiry</a>{% endif %}
+</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-5"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, phone, email or course" aria-label="Search enquiries"></div>
+  <div class="col-8 col-md-3">
+    <select class="form-select" name="status" aria-label="Status">
+      <option value="all" {{ 'selected' if status == 'all' }}>All statuses</option>
+      {% for value, label in statuses %}<option value="{{ value }}" {{ 'selected' if status == value }}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-4 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<div class="table-responsive">
+  <table class="table table-cards align-middle">
+    <thead><tr><th>Name</th><th>Course</th><th>Branch</th><th>Contact</th><th>Received</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for enquiry in page.items %}
+      <tr>
+        <td data-label="Name"><strong>{{ enquiry.full_name }}</strong>{% if enquiry.follow_up_at %}<div class="small text-muted">Follow up {{ enquiry.follow_up_at|localtime('%d %b %Y') }}</div>{% endif %}</td>
+        <td data-label="Course">{{ enquiry.course_interest or '—' }}</td>
+        <td data-label="Branch">{{ enquiry.branch.name if enquiry.branch else 'Unassigned' }}</td>
+        <td data-label="Contact">{{ enquiry.phone or enquiry.email }}</td>
+        <td data-label="Received">{{ enquiry.created_at|localtime('%d %b %Y') }}</td>
+        <td data-label="Status">{{ m.status_pill(enquiry.status) }}</td>
+        <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('enquiries.detail', enquiry_id=enquiry.id) }}">Open</a></td>
+      </tr>
+    {% endfor %}</tbody>
+  </table>
+</div>
+{{ m.pager(page, 'enquiries.index', {'q': q, 'status': status}) }}
+{% else %}
+{{ m.empty_state("No enquiries found", "Public and staff-entered enquiries will appear here.", url_for('enquiries.new') if current_user.has_permission('enquiries.create') else None, "Add enquiry") }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Admissions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Admissions</h1>
+  {% if current_user.has_permission('admissions.create') %}<a class="btn btn-em" href="{{ url_for('admissions.new_admission') }}"><i class="bi bi-plus-lg"></i> New admission</a>{% endif %}
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, admission no. or phone" aria-label="Search"></div>
+  <div class="col-6 col-md-2">
+    <select class="form-select" name="status" aria-label="Status">
+      <option value="all" {{ 'selected' if status == 'all' }}>All</option>
+      {% for st in statuses %}<option value="{{ st }}" {{ 'selected' if status == st }}>{{ st|capitalize }}</option>{% endfor %}
+    </select>
+  </div>
+  {% if branches %}
+  <div class="col-6 col-md-3">
+    <select class="form-select" name="branch" aria-label="Branch">
+      <option value="">All branches</option>
+      {% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Applicant</th><th>Class</th><th>Branch</th><th>Guardian phone</th><th>Applied</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for a in page.items %}
+    <tr>
+      <td class="person-td" data-label="Applicant">
+        <div class="person-cell">
+          {{ m.avatar(url_for('admissions.photo', admission_id=a.id) if a.photo else None, a.full_name, 40) }}
+          <div><strong>{{ a.full_name }}</strong><div class="small text-muted">{{ a.admission_no or a.reference }}</div></div>
+        </div>
+      </td>
+      <td data-label="Class">{{ a.class_name }}</td>
+      <td data-label="Branch">{{ a.branch.name }}</td>
+      <td data-label="Guardian phone">{{ a.guardian_phone }}</td>
+      <td data-label="Applied">{{ a.created_at|localtime('%d %b %Y') }}</td>
+      <td data-label="Status">{{ m.status_pill(a.status) }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admissions.detail', admission_id=a.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'admissions.list_admissions', args) }}
+{% else %}
+  {{ m.empty_state("No applications found", "Change the filters, or add a new admission.", url_for('admissions.new_admission') if current_user.has_permission('admissions.create') else None, "New admission") }}
+{% endif %}
+{% endblock %}

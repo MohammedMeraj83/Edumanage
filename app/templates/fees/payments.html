@@ -1,0 +1,29 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Payments{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Payments</h1><div class="text-muted small mt-1">Received in this period: <strong class="money">{{ total|inr }}</strong> (after refunds, cancelled excluded)</div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('fees.payments_xlsx', **args) }}"><i class="bi bi-file-earmark-excel"></i> Excel</a></div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-6 col-md-2"><input class="form-control" type="date" name="from" value="{{ start.isoformat() }}" aria-label="From"></div>
+  <div class="col-6 col-md-2"><input class="form-control" type="date" name="to" value="{{ end.isoformat() }}" aria-label="To"></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="mode" aria-label="Mode"><option value="">All modes</option>{% for v, l in modes %}<option value="{{ v }}" {{ 'selected' if mode == v }}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-3"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, ID, receipt or ref" aria-label="Search"></div>
+  {% if branches %}<div class="col-12 col-md-2"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Receipt</th><th>Date</th><th>Student</th><th>Mode</th><th class="text-end">Amount</th><th>Status</th></tr></thead>
+  <tbody>{% for p in page.items %}
+    <tr><td data-label="Receipt"><a href="{{ url_for('fees.receipt', payment_id=p.id) }}">{{ p.receipt_no }}</a></td>
+      <td data-label="Date">{{ p.paid_on.strftime('%d %b %Y') }}</td>
+      <td data-label="Student">{{ p.student.full_name }} <span class="text-muted small">{{ p.student.student_code }}</span></td>
+      <td data-label="Mode">{{ p.mode_label }}{% if p.reference %} <span class="small text-muted">· {{ p.reference }}</span>{% endif %}</td>
+      <td data-label="Amount" class="text-end money fw-bold">{{ p.amount|inr }}{% if p.refunded_amount > 0 %}<div class="small text-muted fw-normal">refunded {{ p.refunded_amount|inr }}</div>{% endif %}</td>
+      <td data-label="Status">{% if p.status == 'cancelled' %}<span class="badge text-bg-danger">Cancelled</span>{% else %}<span class="badge text-bg-success">Received</span>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{{ m.pager(page, 'fees.payments', args) }}
+{% else %}{{ m.empty_state("No payments in this period", "Change the dates or filters.", None, None) }}{% endif %}
+{% endblock %}

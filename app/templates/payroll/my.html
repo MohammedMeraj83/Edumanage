@@ -1,0 +1,10 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}My salary{% endblock %}
+{% block content %}
+<div class="page-head"><h1>My salary slips</h1></div>
+{% for p in items %}
+<div class="panel-card mb-2 d-flex justify-content-between align-items-center gap-2"><div><div class="fw-bold">{{ p.month.strftime('%B %Y') }}</div><div class="small text-muted">{{ p.slip_no }} · {{ 'Paid' if p.status == 'paid' else 'Not fully paid yet' }}</div></div>
+  <div class="d-flex align-items-center gap-3"><div class="money fw-bold">{{ p.net_amount|inr }}</div><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('payroll.slip', payroll_id=p.id) }}">Slip</a></div></div>
+{% else %}{{ m.empty_state("No salary slips yet", "Your slips appear here once the salary is finalized.", None, None) }}{% endfor %}
+{% endblock %}

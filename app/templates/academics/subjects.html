@@ -1,0 +1,16 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Subjects{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Subjects</h1>
+  {% if current_user.is_owner %}<a class="btn btn-em" href="{{ url_for('academics.subject_new') }}"><i class="bi bi-plus-lg"></i> Add subject</a>{% endif %}</div>
+{% if items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Subject</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for s in items %}
+    <tr><td data-label="Subject"><strong>{{ s.name }}</strong></td><td data-label="Status">{{ m.status_badge(s.is_active) }}</td>
+      <td class="actions text-end">{% if current_user.is_owner %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('academics.subject_edit', subject_id=s.id) }}">Edit</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}{{ m.empty_state("No subjects yet", "Add subjects like Physics, Chemistry, Maths.", url_for('academics.subject_new') if current_user.is_owner else None, "Add subject") }}{% endif %}
+{% endblock %}

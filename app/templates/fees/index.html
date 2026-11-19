@@ -1,0 +1,41 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Fees{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Fees</h1>
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('fees.pending') }}">Pending fees</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('fees.payments') }}">All payments</a>
+    {% if current_user.role_name in ['owner','branch_admin'] %}<a class="btn btn-outline-secondary" href="{{ url_for('fees.settings') }}"><i class="bi bi-gear"></i></a>{% endif %}
+  </div></div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money">{{ today_total|inr }}</div><div class="stat-label">Collected today</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money">{{ month_total|inr }}</div><div class="stat-label">Collected this month</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money">{{ outstanding|inr }}</div><div class="stat-label">Total pending</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money text-danger">{{ overdue|inr }}</div><div class="stat-label">Overdue ({{ overdue_students }} student{{ '' if overdue_students == 1 else 's' }})</div></div></div>
+</div>
+{% if branches %}<form method="get" class="mb-3"><select class="form-select" style="max-width:260px" name="branch" onchange="this.form.submit()" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></form>{% endif %}
+
+<div class="panel-card mb-3">
+  <h2>Collect a fee</h2>
+  <form method="get" class="row g-2">
+    {% if branch_id %}<input type="hidden" name="branch" value="{{ branch_id }}">{% endif %}
+    <div class="col-12 col-md-9"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Student name, Student ID or parent phone" aria-label="Find student" autofocus></div>
+    <div class="col-12 col-md-3"><button class="btn btn-em w-100"><i class="bi bi-search"></i> Find student</button></div>
+  </form>
+  {% if q %}{% for s in found %}
+    <div class="doc-row"><div class="name"><strong>{{ s.full_name }}</strong><div class="small text-muted">{{ s.student_code }} · {{ s.class_name }} · {{ s.branch.name }}</div></div>
+      <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('fees.student', student_id=s.id) }}">Fees</a>
+        {% if current_user.has_permission('payments.create') %}<a class="btn btn-sm btn-em" href="{{ url_for('fees.collect', student_id=s.id) }}">Collect</a>{% endif %}</div></div>
+  {% else %}<p class="text-muted mt-3 mb-0">No active student found.</p>{% endfor %}{% endif %}
+</div>
+
+<div class="panel-card">
+  <h2>Latest payments</h2>
+  {% for p in recent %}
+    <div class="doc-row"><div class="name"><a href="{{ url_for('fees.receipt', payment_id=p.id) }}"><strong>{{ p.student.full_name }}</strong></a>
+      <div class="small text-muted">{{ p.receipt_no }} · {{ p.paid_on.strftime('%d %b') }} · {{ p.mode_label }}{% if p.status == 'cancelled' %} · <span class="text-danger">cancelled</span>{% endif %}</div></div>
+      <div class="money fw-bold {{ 'text-decoration-line-through text-muted' if p.status == 'cancelled' }}">{{ p.amount|inr }}</div></div>
+  {% else %}<p class="text-muted mb-0">No payments yet.</p>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Payroll{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Payroll · {{ month.strftime('%B %Y') }}</h1><div class="text-muted small mt-1">Net <strong class="money">{{ total|inr }}</strong> · paid <strong class="money">{{ paid|inr }}</strong> · left <strong class="money">{{ (total - paid)|inr }}</strong></div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm"><a class="btn btn-outline-secondary" href="{{ url_for('payroll.structures') }}">Salary setup</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('payroll.month_xlsx', m=month.strftime('%Y-%m')) }}"><i class="bi bi-file-earmark-excel"></i> Excel</a></div></div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-6 col-md-3"><input class="form-control" type="month" name="m" value="{{ month.strftime('%Y-%m') }}" aria-label="Month"></div>
+  {% if branches %}<div class="col-6 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Show</button></div>
+</form>
+
+{% if current_user.has_permission('salary.create') and (not branches or branch_id) %}
+<form method="post" action="{{ url_for('payroll.generate') }}" class="panel-card mb-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="m" value="{{ month.strftime('%Y-%m') }}">{% if branch_id %}<input type="hidden" name="branch_id" value="{{ branch_id }}">{% endif %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2"><div><strong>Make salary drafts for {{ month.strftime('%B %Y') }}</strong><div class="small text-muted">Takes lectures taught and missed from attendance. Existing salaries are not touched.</div></div>
+    <button class="btn btn-em">Generate payroll</button></div></form>
+{% elif branches and not branch_id %}<div class="alert alert-info">Choose a branch to generate payroll.</div>{% endif %}
+
+{% if rows %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Name</th><th>Type</th><th>Lectures</th><th class="text-end">Net salary</th><th class="text-end">Paid</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for p in rows %}
+    <tr><td class="person-td" data-label="Name"><strong>{{ p.person.full_name }}</strong><div class="small text-muted">{{ p.person.employee_code }} · {{ p.branch.name }}</div></td>
+      <td data-label="Type">{{ 'Fixed' if p.pay_type == 'fixed' else ('Per lecture' if p.pay_type == 'per_lecture' else 'Fixed + lecture') }}</td>
+      <td data-label="Lectures">{{ p.lectures_taught if p.kind == 'teacher' else '—' }}</td>
+      <td data-label="Net salary" class="text-end money fw-bold">{{ p.net_amount|inr }}</td>
+      <td data-label="Paid" class="text-end money">{{ p.paid_amount|inr }}</td>
+      <td data-label="Status"><span class="badge text-bg-{{ {'draft':'secondary','finalized':'warning','paid':'success'}.get(p.status, 'secondary') }}">{{ p.status|capitalize }}</span></td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('payroll.detail', payroll_id=p.id) }}">Open</a></td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}{{ m.empty_state("No salary for this month yet", "Set each person's salary first, then generate payroll.", url_for('payroll.structures'), "Salary setup") }}{% endif %}
+{% endblock %}

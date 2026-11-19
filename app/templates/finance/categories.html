@@ -1,0 +1,15 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Expense categories{% endblock %}
+{% block content %}
+{% set is_admin = current_user.role_name in ['owner','branch_admin'] %}
+<div class="page-head"><h1>Expense categories</h1><a class="btn btn-outline-secondary" href="{{ url_for('finance.expenses') }}">Back</a></div>
+<div class="panel-card" style="max-width:640px">
+  {% for c in items %}
+  <div class="doc-row"><div class="name">{{ c.name }} {{ m.status_badge(c.is_active) }}</div>
+    {% if is_admin %}<form method="post" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="category_id" value="{{ c.id }}"><input type="hidden" name="action" value="toggle"><button class="btn btn-sm btn-outline-secondary">{{ 'Hide' if c.is_active else 'Show' }}</button></form>{% endif %}</div>
+  {% endfor %}
+  {% if is_admin %}<form method="post" class="row g-2 mt-3 pt-3 border-top"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-8"><input class="form-control" name="name" maxlength="80" placeholder="New category" required aria-label="New category"></div><div class="col-4"><button class="btn btn-em w-100">Add</button></div></form>{% endif %}
+</div>
+{% endblock %}

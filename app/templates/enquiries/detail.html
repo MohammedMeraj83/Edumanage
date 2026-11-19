@@ -1,0 +1,56 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Enquiry · {{ enquiry.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ enquiry.full_name }}</h1><div class="text-muted">{{ enquiry.branch.name if enquiry.branch else 'Unassigned branch' }} · {{ enquiry.source|capitalize }} enquiry</div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('enquiries.index') }}">Back to enquiries</a>
+</div>
+<div class="row g-3">
+  <div class="col-12 col-lg-5">
+    <section class="panel-card h-100">
+      <h2 class="h5">Contact and interest</h2>
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Phone</dt><dd class="col-sm-8">{{ enquiry.phone or '—' }}</dd>
+        <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ enquiry.email or '—' }}</dd>
+        <dt class="col-sm-4">Course</dt><dd class="col-sm-8">{{ enquiry.course_interest or '—' }}</dd>
+        <dt class="col-sm-4">Received</dt><dd class="col-sm-8">{{ enquiry.created_at|localtime }}</dd>
+        <dt class="col-sm-4">Message</dt><dd class="col-sm-8 text-break">{{ enquiry.message or '—' }}</dd>
+      </dl>
+    </section>
+  </div>
+  <div class="col-12 col-lg-7">
+    <section class="panel-card">
+      <h2 class="h5">Follow-up</h2>
+      <form method="post" action="{{ url_for('enquiries.edit', enquiry_id=enquiry.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+          {% if current_user.is_owner %}
+          <div class="col-12">
+            <label class="form-label" for="branch_id">Assign to branch</label>
+            <select class="form-select" id="branch_id" name="branch_id">
+              <option value="">Unassigned</option>
+              {% for branch in branches %}<option value="{{ branch.id }}" {{ 'selected' if enquiry.branch_id == branch.id }}>{{ branch.name }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="status">Status</label>
+            <select class="form-select" id="status" name="status">
+              {% for value, label in statuses %}<option value="{{ value }}" {{ 'selected' if enquiry.status == value }}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-6"><label class="form-label" for="follow_up_at">Follow-up date</label><input class="form-control" id="follow_up_at" name="follow_up_at" type="date" value="{{ enquiry.follow_up_at.isoformat() if enquiry.follow_up_at else '' }}"></div>
+          <div class="col-12"><label class="form-label" for="staff_notes">Staff notes</label><textarea class="form-control" id="staff_notes" name="staff_notes" rows="5" maxlength="4000">{{ enquiry.staff_notes or '' }}</textarea></div>
+        </div>
+        {% if current_user.has_permission('enquiries.edit') %}<button class="btn btn-em mt-3">Save follow-up</button>{% endif %}
+      </form>
+      {% if current_user.has_permission('enquiries.delete') %}
+      <form method="post" action="{{ url_for('enquiries.delete', enquiry_id=enquiry.id) }}" class="mt-4" onsubmit="return confirm('Delete this enquiry?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-danger btn-sm">Delete enquiry</button>
+      </form>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

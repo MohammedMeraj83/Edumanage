@@ -1,0 +1,42 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Parents{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Parents</h1>
+</div>
+<p class="text-muted">Parents are created from a student's page, using the guardian details given at admission.</p>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-6"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, parent ID or phone" aria-label="Search"></div>
+  <div class="col-6 col-md-3">
+    <select class="form-select" name="status" aria-label="Status">
+      {% for v, l in [('active','Active'),('inactive','Inactive'),('all','All')] %}<option value="{{ v }}" {{ 'selected' if status == v }}>{{ l }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-6 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Parent</th><th>Phone</th><th>Children</th><th>Login</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for p in page.items %}
+    <tr>
+      <td class="person-td" data-label="Parent">
+        <div class="person-cell">{{ m.avatar(None, p.full_name, 40) }}<div><strong>{{ p.full_name }}</strong><div class="small text-muted">{{ p.parent_code }}</div></div></div>
+      </td>
+      <td data-label="Phone">{{ p.phone }}</td>
+      <td data-label="Children">{{ p.links|length }}</td>
+      <td data-label="Login">{{ 'Yes' if p.user_id else 'No' }}</td>
+      <td data-label="Status">{{ m.status_pill(p.status) }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('parents.detail', parent_id=p.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'parents.index', args) }}
+{% else %}
+  {{ m.empty_state("No parents yet", "Open a student and use “Add parent” to create the first one.", url_for('students.list_students'), "Go to students") }}
+{% endif %}
+{% endblock %}

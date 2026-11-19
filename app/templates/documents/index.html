@@ -1,0 +1,43 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Documents{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Document center</h1>
+  {% if can_add %}<a class="btn btn-em" href="{{ url_for('documents.new') }}"><i class="bi bi-plus-lg"></i> Add document</a>{% endif %}</div>
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('documents.index') }}">Library</a></li>
+  {% if current_user.role_name in ['owner', 'branch_admin'] %}<li class="nav-item"><a class="nav-link" href="{{ url_for('documents.papers') }}">Uploaded papers</a></li>{% endif %}
+</ul>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" name="q" value="{{ q }}" placeholder="Search title" aria-label="Search"></div>
+  <div class="col-6 col-md-3"><select class="form-select" name="category" aria-label="Category"><option value="">All categories</option>{% for k, label in categories %}<option value="{{ k }}" {{ 'selected' if category == k }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-3"><select class="form-select" name="audience" aria-label="Audience"><option value="">Any audience</option>{% for k, label in audiences %}<option value="{{ k }}" {{ 'selected' if audience == k }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Title</th><th>Category</th><th>For</th><th>Branch</th><th>Added</th><th></th></tr></thead>
+  <tbody>
+  {% for d in page.items %}
+    <tr>
+      <td class="person-td" data-label="Title"><strong>{{ d.title }}</strong>{% if d.description %}<div class="small text-muted">{{ d.description }}</div>{% endif %}<div class="small text-muted">{{ d.original_name }} {{ human_size(d.size) }}</div></td>
+      <td data-label="Category">{{ d.category_label }}</td>
+      <td data-label="For" class="small">{{ d.audience_label }}</td>
+      <td data-label="Branch" class="small">{{ d.branch.name if d.branch else 'All branches' }}</td>
+      <td data-label="Added" class="small">{{ d.created_at.strftime('%d %b %Y') }}</td>
+      <td class="actions text-end">
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('documents.file', doc_id=d.id) }}" target="_blank" rel="noopener">Download</a>
+        {% if can_manage(current_user, d) %}
+          {% if current_user.has_permission('documents.edit') %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('documents.edit', doc_id=d.id) }}">Edit</a>{% endif %}
+          {% if current_user.has_permission('documents.delete') %}
+          <form method="post" action="{{ url_for('documents.delete', doc_id=d.id) }}" class="d-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-danger" data-confirm="People will no longer see this document." data-title="Remove document?" data-ok-label="Remove">Remove</button></form>{% endif %}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'documents.index', args) }}
+{% else %}{{ m.empty_state("No documents yet", "Share circulars, forms, syllabus or rules with staff, students and parents.", url_for('documents.new') if can_add else None, "Add document") }}{% endif %}
+{% endblock %}

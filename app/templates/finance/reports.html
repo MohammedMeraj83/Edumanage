@@ -1,0 +1,45 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Financial report{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Financial report</h1><a class="btn btn-outline-secondary" href="{{ url_for('finance.reports_xlsx', **request.args) }}"><i class="bi bi-file-earmark-excel"></i> Excel</a></div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-6 col-md-3"><input class="form-control" type="date" name="from" value="{{ start.isoformat() }}" aria-label="From"></div>
+  <div class="col-6 col-md-3"><input class="form-control" type="date" name="to" value="{{ end.isoformat() }}" aria-label="To"></div>
+  {% if branches %}<div class="col-12 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Show</button></div>
+</form>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3">{{ s.income|inr }}</div><div class="stat-label">Fees received</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3">{{ s.expenses|inr }}</div><div class="stat-label">Expenses</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3">{{ s.salary|inr }}</div><div class="stat-label">Salaries paid</div></div></div>
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value money fs-3 {{ 'text-danger' if s.profit < 0 else 'text-success' }}">{{ s.profit|inr }}</div><div class="stat-label">{{ 'Loss' if s.profit < 0 else 'Profit' }}</div></div></div>
+</div>
+<div class="panel-card mb-3"><h2>Last 6 months</h2><div style="position:relative;height:260px"><canvas id="trend" aria-label="Income and spending for the last six months" role="img"></canvas></div></div>
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-6"><div class="panel-card h-100"><h2>Fees received, by mode</h2>
+    {% for label, v in s.by_mode %}<div class="doc-row"><div>{{ label }}</div><div class="money fw-bold">{{ v|inr }}</div></div>{% else %}<p class="text-muted mb-0">Nothing received.</p>{% endfor %}</div></div>
+  <div class="col-12 col-lg-6"><div class="panel-card h-100"><h2>Spending, by category</h2>
+    {% for n, v in s.by_category %}<div class="doc-row"><div>{{ n }}</div><div class="money fw-bold">{{ v|inr }}</div></div>{% endfor %}
+    <div class="doc-row"><div>Salaries paid</div><div class="money fw-bold">{{ s.salary|inr }}</div></div></div></div>
+</div>
+{% if compare %}
+<h2 class="h5 fw-bold mb-3">Branch-wise</h2>
+<table class="table table-cards align-middle">
+  <thead><tr><th>Branch</th><th class="text-end">Fees received</th><th class="text-end">Expenses</th><th class="text-end">Salaries</th><th class="text-end">Profit</th></tr></thead>
+  <tbody>{% for r in compare %}<tr><td data-label="Branch"><strong>{{ r.branch.name }}</strong></td><td data-label="Fees received" class="text-end money">{{ r.income|inr }}</td><td data-label="Expenses" class="text-end money">{{ r.expenses|inr }}</td><td data-label="Salaries" class="text-end money">{{ r.salary|inr }}</td><td data-label="Profit" class="text-end money fw-bold {{ 'text-danger' if r.profit < 0 }}">{{ r.profit|inr }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+<p class="text-muted small">Counted on the day money was received or paid. Cancelled payments and expenses are left out; refunds are subtracted.</p>
+{% endblock %}
+{% block page_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  var d = {{ chart|tojson }};
+  new Chart(document.getElementById("trend"), { type: "bar",
+    data: { labels: d.labels, datasets: [
+      { label: "Fees received", data: d.income, backgroundColor: "#0e7c7b" },
+      { label: "Spent (expenses + salary)", data: d.out, backgroundColor: "#c2410c" } ] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } });
+</script>
+{% endblock %}

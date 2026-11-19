@@ -1,0 +1,22 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Expense{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ e.category.name }} · {{ e.amount|inr }}</h1>{% if e.status == 'cancelled' %}<span class="badge text-bg-danger">Cancelled</span>{% endif %}</div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('finance.expenses') }}">Back</a></div>
+<div class="panel-card mb-3">
+  <dl class="kv">
+    <dt>Date</dt><dd>{{ e.expense_date.strftime('%d %b %Y') }}</dd><dt>Branch</dt><dd>{{ e.branch.name }}</dd>
+    <dt>For</dt><dd>{{ e.description }}</dd><dt>Paid to</dt><dd>{{ e.vendor or '—' }}</dd>
+    <dt>Paid by</dt><dd>{{ e.mode|capitalize }}{% if e.reference %} · {{ e.reference }}{% endif %}</dd>
+    <dt>Bill</dt><dd>{% if e.bill_file %}<a href="{{ url_for('finance.expense_bill', expense_id=e.id) }}" target="_blank" rel="noopener">{{ e.bill_name }}</a>{% else %}—{% endif %}</dd>
+    <dt>Entered by</dt><dd>{{ e.creator.full_name }} on {{ e.created_at|localtime }}</dd>
+    {% if e.status == 'cancelled' %}<dt>Cancelled</dt><dd>{{ e.cancel_reason }}</dd>{% endif %}
+  </dl>
+</div>
+{% if current_user.role_name in ['owner','branch_admin'] and e.status == 'active' %}
+<div class="panel-card"><details class="inline"><summary>Cancel this expense (entered by mistake)</summary>
+  <form method="post" action="{{ url_for('finance.expense_cancel', expense_id=e.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-12 col-md-9"><input class="form-control" name="reason" maxlength="200" placeholder="Why?" required aria-label="Reason"></div>
+    <div class="col-12 col-md-3"><button class="btn btn-outline-danger w-100" data-confirm="The expense stays on record as cancelled and is not counted in reports." data-title="Cancel expense?" data-ok-label="Cancel expense">Cancel expense</button></div></form></details></div>
+{% endif %}
+{% endblock %}

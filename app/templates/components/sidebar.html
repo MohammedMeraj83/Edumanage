@@ -1,0 +1,114 @@
+{% set role = current_user.role.name %}
+{% set items = [('Dashboard', 'bi-speedometer2', role ~ '.dashboard', role ~ '.')] %}
+{% if current_user.has_permission('website.view') %}
+  {% set items = items + [('Website Admin', 'bi-globe2', 'website_admin.dashboard', 'website_admin.')] %}
+{% endif %}
+{% if current_user.has_permission('admissions.view') %}
+  {% set items = items + [('Admissions', 'bi-person-plus', 'admissions.list_admissions', 'admissions.')] %}
+{% endif %}
+{% if current_user.has_permission('enquiries.view') %}
+  {% set items = items + [('Enquiries', 'bi-chat-dots', 'enquiries.index', 'enquiries.')] %}
+{% endif %}
+{% if current_user.has_permission('notices.view') %}
+  {% set notices_endpoint = 'notices.index' if role in ['owner', 'branch_admin'] else 'notifications.inbox' %}
+  {% set notices_prefix = 'notices.' if role in ['owner', 'branch_admin'] else 'notifications.' %}
+  {% set items = items + [('Notices', 'bi-megaphone', notices_endpoint, notices_prefix)] %}
+{% endif %}
+{% if current_user.has_permission('students.view') %}
+  {% set items = items + [('Students', 'bi-mortarboard', 'students.list_students', 'students.')] %}
+{% endif %}
+{% if current_user.has_permission('parents.view') %}
+  {% set items = items + [('Parents', 'bi-people', 'parents.index', 'parents.')] %}
+{% endif %}
+{% if current_user.has_permission('teachers.view') %}
+  {% set items = items + [('Teachers', 'bi-person-workspace', 'teachers.index', 'teachers.')] %}
+{% endif %}
+{% if current_user.has_permission('staff.view') %}
+  {% set items = items + [('Staff', 'bi-person-badge', 'staff.index', 'staff.')] %}
+{% endif %}
+{% if current_user.has_permission('batches.view') %}
+  {% set items = items + [('Batches', 'bi-collection', 'batches.index', 'batches.')] %}
+{% endif %}
+{% if current_user.has_permission('timetable.view') %}
+  {% set items = items + [('Timetable', 'bi-calendar-week', 'timetable.index', 'timetable.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin'] %}
+  {% set items = items + [('Courses', 'bi-journal-bookmark', 'academics.courses', 'academics.course'),
+                          ('Subjects', 'bi-book', 'academics.subjects', 'academics.subject'),
+                          ('Rooms', 'bi-door-open', 'academics.rooms', 'academics.room')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'accountant'] and current_user.has_permission('fees.view') %}
+  {% set items = items + [('Fees', 'bi-cash-coin', 'fees.index', 'fees.index'), ('Pending fees', 'bi-hourglass-split', 'fees.pending', 'fees.pending')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'accountant'] and current_user.has_permission('payments.view') %}
+  {% set items = items + [('Payments', 'bi-receipt', 'fees.payments', 'fees.payment')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'accountant'] and current_user.has_permission('expenses.view') %}
+  {% set items = items + [('Expenses', 'bi-wallet2', 'finance.expenses', 'finance.expense')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'accountant'] and current_user.has_permission('salary.view') %}
+  {% set items = items + [('Payroll', 'bi-people-fill', 'payroll.index', 'payroll.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'accountant'] and current_user.has_permission('reports.view') %}
+  {% set items = items + [('Financial report', 'bi-graph-up-arrow', 'finance.reports', 'finance.report')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin'] %}
+  {% set items = items + [('Live board', 'bi-broadcast', 'attendance.live', 'attendance.live'),
+                          ('Attendance reports', 'bi-bar-chart', 'attendance.reports', 'attendance.report'),
+                          ('Location & QR', 'bi-geo-alt', 'attendance.location', 'attendance.location'),
+                          ('Leave requests', 'bi-calendar-x', 'leave.index', 'leave.')] %}
+{% elif role == 'teacher' %}
+  {% set items = items + [('My lectures', 'bi-clipboard-check', 'attendance.my', 'attendance.'), ('My salary', 'bi-cash-stack', 'payroll.my', 'payroll.my'), ('Leave', 'bi-calendar-x', 'leave.index', 'leave.')] %}
+{% elif role == 'accountant' %}
+  {% set items = items + [('My salary', 'bi-cash-stack', 'payroll.my', 'payroll.my')] %}
+{% elif role == 'student' %}
+  {% set items = items + [('My attendance', 'bi-clipboard-check', 'student.attendance', 'student.attendance'), ('My fees', 'bi-cash-coin', 'student.fees', 'student.fees'), ('My results', 'bi-journal-check', 'student.results', 'student.result'), ('Homework', 'bi-journal-text', 'student.homework', 'student.homework'), ('Study materials', 'bi-folder2-open', 'student.materials', 'student.materials'), ('Documents', 'bi-folder2', 'student.documents', 'student.documents'), ('Leave', 'bi-calendar-x', 'leave.index', 'leave.')] %}
+{% elif role == 'parent' %}
+  {% set items = items + [('Leave', 'bi-calendar-x', 'leave.index', 'leave.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'teacher'] and current_user.has_permission('exams.view') %}
+  {% set items = items + [('Exams & results', 'bi-journal-check', 'exams.index', 'exams.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'teacher'] and current_user.has_permission('homework.view') %}
+  {% set items = items + [('Homework', 'bi-journal-text', 'homework.index', 'homework.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'teacher'] and current_user.has_permission('materials.view') %}
+  {% set items = items + [('Study materials', 'bi-folder2-open', 'materials.index', 'materials.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin'] and current_user.has_permission('id_cards.view') %}
+  {% set items = items + [('ID cards', 'bi-person-badge', 'id_cards.index', 'id_cards.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin'] and current_user.has_permission('certificates.view') %}
+  {% set items = items + [('Certificates', 'bi-award', 'certificates.index', 'certificates.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'teacher'] and current_user.has_permission('documents.view') %}
+  {% set items = items + [('Documents', 'bi-folder2', 'documents.index', 'documents.')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin', 'teacher'] and current_user.has_permission('online_classes.view') %}
+  {% set items = items + [('Online classes', 'bi-camera-video', 'online.classes', 'online.classes'), ('Online exams', 'bi-ui-checks-grid', 'online.exams', 'online.exams')] %}
+{% elif role in ['student', 'parent'] and current_user.has_permission('online_classes.view') %}
+  {% set items = items + [('Online classes', 'bi-camera-video', 'online.classes', 'online.classes'), ('Online exams', 'bi-ui-checks-grid', 'online.exams', 'online.exams')] %}
+{% endif %}
+{% if role in ['owner', 'branch_admin'] and current_user.has_permission('library.view') %}
+  {% set items = items + [('Library', 'bi-book', 'library.index', 'library.')] %}
+{% elif role in ['student', 'teacher', 'parent'] and current_user.has_permission('library.view') %}
+  {% set items = items + [('My library', 'bi-book', 'library.my_books', 'library.my')] %}
+{% endif %}
+{% if role == 'owner' %}
+  {% set items = items + [
+    ('Branches', 'bi-diagram-3', 'branches.list_branches', 'branches.'),
+    ('Institute profile', 'bi-building', 'settings.institute', 'settings.institute'),
+    ('Academic sessions', 'bi-calendar3', 'settings.sessions', 'settings.session'),
+  ] %}
+{% endif %}
+<div class="brand">
+  {% if institute_logo %}<img src="{{ url_for('media', folder='institute', filename=institute_logo) }}" alt="">{% endif %}
+  <div class="text-white fw-bold lh-sm">{{ institute_name }}<small class="d-block fw-normal" style="color:#8fa0bf;font-size:.78rem">{{ current_user.role.display_name }}</small></div>
+</div>
+<nav class="nav flex-column gap-1" aria-label="Main">
+  {% for label, icon, endpoint, prefix in items %}
+    <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith(prefix) else '' }}" href="{{ url_for(endpoint) }}">
+      <i class="bi {{ icon }}"></i><span>{{ label }}</span>
+    </a>
+  {% endfor %}
+</nav>

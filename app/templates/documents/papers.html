@@ -1,0 +1,36 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Uploaded papers{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Document center</h1></div>
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('documents.index') }}">Library</a></li>
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('documents.papers') }}">Uploaded papers</a></li>
+</ul>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" name="q" value="{{ q }}" placeholder="Person, ID or file name" aria-label="Search"></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="kind" aria-label="Who"><option value="">Everyone</option><option value="student" {{ 'selected' if kind == 'student' }}>Students</option><option value="teacher" {{ 'selected' if kind == 'teacher' }}>Teachers</option><option value="staff" {{ 'selected' if kind == 'staff' }}>Staff</option></select></div>
+  <div class="col-6 col-md-3"><select class="form-select" name="type" aria-label="Paper type"><option value="">All paper types</option>{% for k, label in types %}<option value="{{ k }}" {{ 'selected' if dtype == k }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if rows %}
+<div class="text-muted small mb-2">{{ total }} paper{{ 's' if total != 1 }}</div>
+<table class="table table-cards align-middle">
+  <thead><tr><th>Person</th><th>Paper</th><th>Uploaded</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td class="person-td" data-label="Person"><a href="{{ r.profile }}"><strong>{{ r.who }}</strong></a><div class="small text-muted">{{ r.kind }} · {{ r.code }}</div></td>
+      <td data-label="Paper">{{ r.type }}<div class="small text-muted">{{ r.name }} {{ human_size(r.size) }}</div></td>
+      <td data-label="Uploaded" class="small">{{ r.at|localtime('%d %b %Y') }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ r.url }}" target="_blank" rel="noopener">Download</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if pages > 1 %}
+<nav aria-label="Pages"><ul class="pagination">
+  {% for n in range(1, pages + 1) %}<li class="page-item {{ 'active' if n == page_no }}"><a class="page-link" href="{{ url_for('documents.papers', page=n, **args) }}">{{ n }}</a></li>{% endfor %}
+</ul></nav>{% endif %}
+{% else %}{{ m.empty_state("No papers found", "Papers uploaded on student, teacher and staff profiles show up here.", None, None) }}{% endif %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ 'Edit notice' if notice else 'Publish notice' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit notice' if notice else 'Publish notice' }}</h1></div>
+<div class="panel-card">
+  {% for error in errors %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endfor %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if current_user.is_owner and not notice %}
+    <div class="mb-3">
+      <label class="form-label" for="branch_id">Branch</label>
+      <select class="form-select" id="branch_id" name="branch_id">
+        <option value="">All branches</option>
+        {% for branch in branches %}<option value="{{ branch.id }}" {{ 'selected' if form.get('branch_id')|int == branch.id }}>{{ branch.name }}</option>{% endfor %}
+      </select>
+    </div>
+    {% elif notice %}
+    <p class="text-muted">Audience: {{ notice.audience|capitalize }} · {{ notice.branch.name if notice.branch else 'All branches' }}. Published audiences cannot be changed.</p>
+    <input type="hidden" name="audience" value="{{ notice.audience }}">
+    {% endif %}
+    {% if not notice %}
+    <div class="mb-3">
+      <label class="form-label" for="audience">Recipients</label>
+      <select class="form-select" id="audience" name="audience" required>
+        {% for value, label in audiences %}<option value="{{ value }}" {{ 'selected' if form.get('audience', 'all') == value }}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="mb-3"><label class="form-label" for="title">Title</label><input class="form-control" id="title" name="title" maxlength="150" required value="{{ form.get('title', notice.title if notice else '') }}"></div>
+    <div class="mb-3"><label class="form-label" for="body">Message</label><textarea class="form-control" id="body" name="body" rows="8" maxlength="10000" required>{{ form.get('body', notice.body if notice else '') }}</textarea></div>
+    <div class="d-flex gap-2"><button class="btn btn-em">{{ 'Save changes' if notice else 'Publish notice' }}</button><a class="btn btn-outline-secondary" href="{{ url_for('notices.index') }}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

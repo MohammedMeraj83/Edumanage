@@ -1,0 +1,19 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit session' if item else 'New session' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit ' ~ item.name if item else 'Add an academic session' }}</h1></div>
+<form method="post" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {{ m.field(form.name, "col-12 col-md-4", placeholder="2026-27") }}
+    {{ m.field(form.start_date, "col-6 col-md-4") }}
+    {{ m.field(form.end_date, "col-6 col-md-4") }}
+    {{ m.check(form.is_current) }}
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm">
+    <button class="btn btn-em">{{ 'Save changes' if item else 'Create session' }}</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('settings.sessions') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

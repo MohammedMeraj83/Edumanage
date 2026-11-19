@@ -1,0 +1,27 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit branch' if branch else 'New branch' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit ' ~ branch.name if branch else 'Add a branch' }}</h1></div>
+<form method="post" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {{ m.field(form.name, "col-12 col-md-8") }}
+    {% if form.code %}
+      {{ m.field(form.code, "col-12 col-md-4", help="Used in admission and receipt numbers. Cannot be changed later.", style="text-transform:uppercase") }}
+    {% else %}
+      <div class="col-12 col-md-4"><label class="form-label">Branch code</label><input class="form-control" value="{{ branch.code }}" disabled></div>
+    {% endif %}
+    {{ m.field(form.phone, "col-12 col-md-6", type="tel", inputmode="tel") }}
+    {{ m.field(form.email, "col-12 col-md-6", type="email") }}
+    {{ m.field(form.address, "col-12", rows=2) }}
+    {{ m.field(form.city, "col-12 col-md-4") }}
+    {{ m.field(form.state, "col-12 col-md-4") }}
+    {{ m.field(form.pincode, "col-12 col-md-4", inputmode="numeric") }}
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm">
+    <button class="btn btn-em">{{ 'Save changes' if branch else 'Create branch' }}</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('branches.detail', branch_id=branch.id) if branch else url_for('branches.list_branches') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% import "components/macros.html" as m %}
+<datalist id="classOptions">
+  {% for c in ['Nursery','LKG','UKG'] %}<option value="{{ c }}">{% endfor %}
+  {% for n in range(1, 13) %}<option value="Class {{ n }}">{% endfor %}
+  <option value="Graduation"><option value="Competitive exam">
+</datalist>
+
+<div class="section-title">Student</div>
+<div class="row g-3 mb-4">
+  {{ m.field(form.full_name, "col-12 col-md-6", autocomplete="off") }}
+  {{ m.field(form.dob, "col-6 col-md-3") }}
+  {{ m.field(form.gender, "col-6 col-md-3", cls="form-select") }}
+  {{ m.field(form.class_name, "col-12 col-md-4", list="classOptions", placeholder="e.g. Class 8") }}
+  {{ m.field(form.blood_group, "col-6 col-md-4", cls="form-select") }}
+  {{ m.field(form.phone, "col-6 col-md-4", type="tel", inputmode="tel") }}
+  {{ m.field(form.email, "col-12 col-md-6", type="email") }}
+  {{ m.field(form.previous_school, "col-12 col-md-6") }}
+  {{ m.field(form.address, "col-12", rows=2) }}
+  {{ m.field(form.city, "col-12 col-md-4") }}
+  {{ m.field(form.state, "col-12 col-md-4") }}
+  {{ m.field(form.pincode, "col-12 col-md-4", inputmode="numeric") }}
+</div>
+
+<div class="section-title">Parent / guardian</div>
+<div class="row g-3 mb-4">
+  {{ m.field(form.father_name, "col-12 col-md-6") }}
+  {{ m.field(form.mother_name, "col-12 col-md-6") }}
+  {{ m.field(form.guardian_phone, "col-12 col-md-6", type="tel", inputmode="tel", help="Main contact for fee and attendance messages.") }}
+  {{ m.field(form.guardian_email, "col-12 col-md-6", type="email") }}
+</div>
+
+<div class="section-title">Photo and notes</div>
+<div class="row g-3">
+  <div class="col-12 col-md-6">
+    <label class="form-label" for="{{ form.photo.id }}">Photo</label>
+    {{ form.photo(class="form-control" ~ (" is-invalid" if form.photo.errors else ""), accept="image/png,image/jpeg,image/webp") }}
+    {% for e in form.photo.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+    <div class="form-text">PNG, JPG or WEBP, up to 2 MB. On a phone you can take the photo directly.</div>
+  </div>
+  {{ m.field(form.notes, "col-12 col-md-6", rows=2) }}
+</div>

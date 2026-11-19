@@ -1,0 +1,14 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Edit student{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Edit {{ s.full_name }}</h1><div class="text-muted small">{{ s.student_code }}</div></div>
+<form method="post" enctype="multipart/form-data" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  {% include "students/_person_fields.html" %}
+  <div class="d-flex gap-2 mt-4 stack-sm">
+    <button class="btn btn-em">Save changes</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('students.detail', student_id=s.id) }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

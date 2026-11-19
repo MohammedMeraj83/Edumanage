@@ -1,0 +1,35 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Attendance reports{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Attendance reports</h1></div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-6 col-md-3"><input class="form-control" type="date" name="from" value="{{ start.isoformat() }}" aria-label="From"></div>
+  <div class="col-6 col-md-3"><input class="form-control" type="date" name="to" value="{{ end.isoformat() }}" aria-label="To"></div>
+  {% if branches %}<div class="col-12 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Show</button></div>
+</form>
+
+<h2 class="h5 fw-bold mb-3">Teacher punctuality</h2>
+{% if teachers %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Teacher</th><th>Lectures</th><th>On time</th><th>Late</th><th>Avg late</th><th>Missed</th><th>On leave</th><th>Attendance taken</th></tr></thead>
+  <tbody>{% for r in teachers %}
+    <tr><td data-label="Teacher"><strong>{{ r.teacher.full_name }}</strong></td><td data-label="Lectures">{{ r.lectures }}</td><td data-label="On time">{{ r.on_time }}</td>
+      <td data-label="Late">{{ r.late }}</td><td data-label="Avg late">{{ r.avg_late }} min</td>
+      <td data-label="Missed" class="{{ 'text-danger fw-bold' if r.missed }}">{{ r.missed }}</td><td data-label="On leave">{{ r.leave }}</td><td data-label="Attendance taken">{{ r.marked }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}{{ m.empty_state("No lectures in this period", "Lectures are counted once their time has passed.", None, None) }}{% endif %}
+
+<h2 class="h5 fw-bold mt-4 mb-3">Student attendance by batch</h2>
+{% if batches %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Batch</th><th>Lectures with attendance</th><th>Average attendance</th></tr></thead>
+  <tbody>{% for r in batches %}
+    <tr><td data-label="Batch"><a href="{{ url_for('batches.detail', batch_id=r.batch.id) }}">{{ r.batch.name }}</a></td><td data-label="Lectures">{{ r.held }}</td>
+      <td data-label="Average">{{ (r.percent ~ '%') if r.percent is not none else '—' }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}<p class="text-muted">No attendance was taken in this period.</p>{% endif %}
+{% endblock %}

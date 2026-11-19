@@ -1,0 +1,21 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Salary setup{% endblock %}
+{% block content %}
+{% set is_admin = current_user.role_name in ['owner','branch_admin'] %}
+<div class="page-head"><h1>Salary setup</h1><a class="btn btn-outline-secondary" href="{{ url_for('payroll.index') }}">Payroll</a></div>
+{% if branches %}<form method="get" class="mb-3"><select class="form-select" style="max-width:260px" name="branch" onchange="this.form.submit()" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></form>{% endif %}
+{% if rows %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Name</th><th>Role</th><th>Pay type</th><th class="text-end">Monthly</th><th class="text-end">Per lecture</th><th></th></tr></thead>
+  <tbody>{% for r in rows %}{% set o, st = r.person, r.st %}
+    <tr><td class="person-td" data-label="Name"><strong>{{ o.full_name }}</strong><div class="small text-muted">{{ o.employee_code }} · {{ o.branch.name }}</div></td>
+      <td data-label="Role">{{ 'Teacher' if r.kind == 'teacher' else o.designation }}</td>
+      <td data-label="Pay type">{% if st %}{{ pay_types[st.pay_type] }}{% else %}<span class="badge text-bg-warning">Not set</span>{% endif %}</td>
+      <td data-label="Monthly" class="text-end money">{{ st.base_salary|inr if st and st.base_salary > 0 else '—' }}</td>
+      <td data-label="Per lecture" class="text-end money">{{ st.per_lecture_rate|inr if st and st.per_lecture_rate > 0 else '—' }}</td>
+      <td class="actions text-end">{% if is_admin %}<a class="btn btn-sm {{ 'btn-outline-secondary' if st else 'btn-em' }}" href="{{ url_for('payroll.structure_edit', kind=r.kind, person_id=o.id) }}">{{ 'Edit' if st else 'Set salary' }}</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}{{ m.empty_state("No teachers or staff yet", "Add them first.", url_for('teachers.new'), "Add teacher") }}{% endif %}
+{% endblock %}

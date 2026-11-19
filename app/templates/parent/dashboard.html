@@ -1,0 +1,32 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}My children{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Welcome, {{ current_user.full_name }}</h1></div>
+{% if children %}
+<div class="row g-3">
+  {% for c in children %}{% set sm = summaries[c.id] %}
+  <div class="col-12 col-xl-6"><div class="panel-card h-100">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div><div class="fw-bold">{{ c.full_name }}</div><div class="text-muted small">{{ c.student_code }} · {{ c.class_name }} · {{ c.branch.name }}</div></div>
+      <div class="text-end"><div class="stat-value fs-3">{{ (sm.percent ~ '%') if sm.percent is not none else '—' }}</div><div class="small text-muted">30-day attendance</div></div>
+    </div>
+    <div class="section-title mt-3">Today</div>
+    {% for s, rec, st in today_rows[c.id] %}
+      <div class="doc-row"><div class="name"><strong>{{ s.batch.subject.name }}</strong> <span class="text-muted small">· {{ s.start_at|localtime('%I:%M %p') }} · {{ s.teacher.full_name }}</span></div>
+        {% if rec and s.attendance_submitted_at %}<span class="badge text-bg-{{ {'present':'success','late':'warning','absent':'danger','leave':'secondary'}.get(rec.status) }}">{{ {'present':'Attended','late':'Attended (late)','absent':'Absent','leave':'On leave'}.get(rec.status) }}</span>
+        {% else %}<span class="badge text-bg-{{ st[2] }}">{{ 'Not marked yet' if st[0] in ['running','completed'] else st[1] }}</span>{% endif %}</div>
+    {% else %}<p class="text-muted mb-0">No classes today.</p>{% endfor %}
+    <div class="section-title mt-3">Batches</div>
+    {% for b in child_batches[c.id] %}<div class="small mb-1"><strong>{{ b.subject.name }}</strong> · {{ b.teacher.full_name }} · {{ schedule_text(b) }}</div>{% else %}<p class="text-muted small mb-0">Not in any batch yet.</p>{% endfor %}
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('parent.child_attendance', student_id=c.id) }}">Full attendance</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('parent.child_results', student_id=c.id) }}">Results</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('parent.child_homework', student_id=c.id) }}">Homework</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('parent.child_documents', student_id=c.id) }}">Documents</a>
+      <a class="btn btn-sm {{ 'btn-em' if balances[c.id].balance > 0 else 'btn-outline-secondary' }}" href="{{ url_for('parent.child_fees', student_id=c.id) }}">Fees{% if balances[c.id].balance > 0 %}: {{ balances[c.id].balance|inr }} to pay{% endif %}</a>
+    </div>
+  </div></div>
+  {% endfor %}
+</div>
+{% else %}<div class="panel-card"><p class="text-muted mb-0">No children are linked to your account yet. Please contact the institute.</p></div>{% endif %}
+{% endblock %}

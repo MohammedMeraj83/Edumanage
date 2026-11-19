@@ -1,0 +1,21 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Attendance{% endblock %}
+{% block content %}
+{% if not student %}<div class="panel-card"><p class="text-muted mb-0">Your student profile is not linked yet.</p></div>{% else %}
+<div class="page-head"><div><h1>{{ student.full_name }}</h1><div class="text-muted small">Last 30 days</div></div></div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="panel-card h-100"><div class="stat-value">{{ (summary.percent ~ '%') if summary.percent is not none else '—' }}</div><div class="stat-label">Attendance</div></div></div>
+  <div class="col-6 col-md-3"><div class="panel-card h-100"><div class="stat-value">{{ summary.present + summary.late }}</div><div class="stat-label">Attended</div></div></div>
+  <div class="col-6 col-md-3"><div class="panel-card h-100"><div class="stat-value">{{ summary.absent }}</div><div class="stat-label">Absent</div></div></div>
+  <div class="col-6 col-md-3"><div class="panel-card h-100"><div class="stat-value">{{ summary.leave }}</div><div class="stat-label">On leave</div></div></div>
+</div>
+<div class="panel-card"><h2>Recent lectures</h2>
+  {% for r in recent %}
+    <div class="doc-row"><div class="name"><strong>{{ r.session.batch.subject.name }}</strong> <span class="text-muted small">· {{ r.session.batch.name }}</span>
+      <div class="small text-muted">{{ r.session.lecture_date.strftime('%a, %d %b') }} · {{ r.session.start_at|localtime('%I:%M %p') }}{% if r.verified %} · <span class="text-success"><i class="bi bi-geo-alt-fill"></i> checked in</span>{% endif %}</div></div>
+      <span class="badge text-bg-{{ {'present':'success','late':'warning','absent':'danger','leave':'secondary'}.get(r.status) }}">{{ r.status|capitalize }}</span></div>
+  {% else %}<p class="text-muted mb-0">No attendance recorded yet.</p>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

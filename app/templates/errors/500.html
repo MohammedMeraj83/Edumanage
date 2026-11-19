@@ -1,0 +1,12 @@
+{% extends "base/base.html" %}
+{% block title %}Something went wrong{% endblock %}
+{% block body %}
+<div class="d-flex align-items-center justify-content-center" style="min-height:100vh">
+  <div class="text-center px-3">
+    <div class="display-3 fw-bold" style="color:var(--em-teal)">500</div>
+    <h1 class="h4 fw-bold">Something went wrong</h1>
+    <p class="text-muted">The server hit an error. Try again, and tell your administrator if it keeps happening.</p>
+    <a class="btn btn-em" href="{{ url_for('home') }}">Back to home</a>
+  </div>
+</div>
+{% endblock %}

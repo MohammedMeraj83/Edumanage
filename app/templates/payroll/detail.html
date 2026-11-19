@@ -1,0 +1,63 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Salary{% endblock %}
+{% block content %}
+{% set is_admin = current_user.role_name in ['owner','branch_admin'] %}
+{% set draft = p.status == 'draft' %}
+<div class="page-head"><div><h1>{{ p.person.full_name }}</h1><div class="text-muted small mt-1">{{ p.month.strftime('%B %Y') }} · {{ p.person.employee_code }} · {{ p.slip_no }} · <span class="badge text-bg-{{ {'draft':'secondary','finalized':'warning','paid':'success','cancelled':'danger'}.get(p.status) }}">{{ p.status|capitalize }}</span></div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm"><a class="btn btn-outline-secondary" href="{{ url_for('payroll.index', m=p.month.strftime('%Y-%m')) }}">Back</a>
+    {% if p.status in ['finalized','paid'] %}<a class="btn btn-em" href="{{ url_for('payroll.slip_pdf', payroll_id=p.id) }}" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Salary slip</a>{% endif %}</div></div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6"><div class="panel-card h-100"><h2>Calculation</h2>
+    <dl class="kv">
+      {% if p.base_amount > 0 %}<dt>Fixed salary</dt><dd class="money">{{ p.base_amount|inr }}</dd>{% endif %}
+      {% if p.pay_type != 'fixed' %}<dt>Lectures taught</dt><dd>{{ p.lectures_taught }} × {{ p.lecture_rate|inr }} = <strong class="money">{{ p.lecture_amount|inr }}</strong></dd>{% endif %}
+      {% if p.kind == 'teacher' %}<dt>Lectures missed</dt><dd>{{ p.lectures_missed }}{% if p.missed_rate > 0 %} × {{ p.missed_rate|inr }} = <strong class="money text-danger">−{{ p.auto_deduction|inr }}</strong>{% else %} <span class="text-muted">(no deduction rule)</span>{% endif %}</dd>{% endif %}
+      <dt>Allowance</dt><dd class="money">{{ p.allowance|inr }}</dd>
+      <dt>Bonus</dt><dd class="money">{{ p.bonus|inr }}</dd>
+      <dt>Other deduction</dt><dd class="money text-danger">{{ ('−' ~ (p.deduction|inr)) if p.deduction > 0 else '₹0' }}</dd>
+      {% if p.adjustment_note %}<dt>Note</dt><dd>{{ p.adjustment_note }}</dd>{% endif %}
+      <dt>Net salary</dt><dd class="fs-5 fw-bold money">{{ p.net_amount|inr }}</dd>
+      <dt>Paid / left</dt><dd class="money">{{ p.paid_amount|inr }} / {{ p.balance|inr }}</dd>
+    </dl></div></div>
+
+  <div class="col-12 col-lg-6"><div class="panel-card h-100"><h2>{{ 'Adjust (draft)' if draft else 'Actions' }}</h2>
+    {% if draft and current_user.has_permission('salary.edit') %}
+    <form method="post" action="{{ url_for('payroll.adjust', payroll_id=p.id) }}" class="row g-2 mb-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-4"><label class="form-label small" for="allowance">Allowance</label><input class="form-control" id="allowance" name="allowance" type="number" step="0.01" min="0" value="{{ p.allowance }}"></div>
+      <div class="col-4"><label class="form-label small" for="bonus">Bonus</label><input class="form-control" id="bonus" name="bonus" type="number" step="0.01" min="0" value="{{ p.bonus }}"></div>
+      <div class="col-4"><label class="form-label small" for="deduction">Deduction</label><input class="form-control" id="deduction" name="deduction" type="number" step="0.01" min="0" value="{{ p.deduction }}"></div>
+      <div class="col-12"><input class="form-control" name="note" maxlength="250" placeholder="Note (needed for a deduction)" value="{{ p.adjustment_note or '' }}" aria-label="Note"></div>
+      <div class="col-12"><button class="btn btn-outline-secondary w-100">Save adjustments</button></div></form>
+    <div class="d-flex flex-wrap gap-2 stack-sm">
+      <form method="post" action="{{ url_for('payroll.recalculate', payroll_id=p.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i> Recalculate from attendance</button></form>
+      {% if is_admin %}<form method="post" action="{{ url_for('payroll.finalize', payroll_id=p.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-em w-100" data-confirm="After this the amounts are locked and the salary can be paid." data-title="Finalize this salary?" data-ok-label="Finalize" data-ok-class="btn-em">Finalize</button></form>{% endif %}
+    </div>
+    {% elif draft %}<p class="text-muted mb-0">You can view this draft.</p>
+    {% endif %}
+    {% if is_admin and p.status in ['draft','finalized'] and not (p.payments|selectattr('status','equalto','active')|list) %}
+    <details class="inline mt-3"><summary>Cancel this payroll</summary>
+      <form method="post" action="{{ url_for('payroll.cancel', payroll_id=p.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="col-9"><input class="form-control" name="reason" maxlength="200" placeholder="Why?" required aria-label="Reason"></div><div class="col-3"><button class="btn btn-outline-danger w-100">Cancel</button></div></form></details>
+    {% endif %}
+  </div></div>
+
+  {% if p.status in ['finalized','paid'] %}
+  <div class="col-12"><div class="panel-card"><h2>Salary payments</h2>
+    {% for sp in p.payments %}
+      <div class="doc-row" style="align-items:flex-start"><div class="name"><strong class="money {{ 'text-decoration-line-through text-muted' if sp.status == 'cancelled' }}">{{ sp.amount|inr }}</strong>
+        <div class="small text-muted">{{ sp.paid_on.strftime('%d %b %Y') }} · {{ sp.mode|capitalize }}{% if sp.reference %} · {{ sp.reference }}{% endif %} · by {{ sp.payer.full_name }}{% if sp.status == 'cancelled' %} · <span class="text-danger">cancelled: {{ sp.cancel_reason }}</span>{% endif %}</div></div>
+        {% if is_admin and sp.status == 'active' %}<details class="inline"><summary>Cancel</summary><form method="post" action="{{ url_for('payroll.cancel_payment', payment_id=sp.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="col-8"><input class="form-control" name="reason" maxlength="200" placeholder="Reason" required aria-label="Reason"></div><div class="col-4"><button class="btn btn-sm btn-outline-danger w-100">Cancel</button></div></form></details>{% endif %}</div>
+    {% else %}<p class="text-muted mb-0">Nothing paid yet.</p>{% endfor %}
+    {% if p.status == 'finalized' and current_user.has_permission('salary.edit') %}
+    <form method="post" action="{{ url_for('payroll.pay', payroll_id=p.id) }}" class="row g-2 mt-3 pt-3 border-top"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-6 col-md-3"><label class="form-label small" for="amount">Amount (₹)</label><input class="form-control" id="amount" name="amount" type="number" step="0.01" min="0.01" max="{{ p.balance }}" value="{{ p.balance }}" required></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="mode">Paid by</label><select class="form-select" id="mode" name="mode">{% for v, l in modes %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="paid_on">Date</label><input class="form-control" id="paid_on" type="date" name="paid_on" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small" for="reference">Transaction no.</label><input class="form-control" id="reference" name="reference" maxlength="80"></div>
+      <div class="col-12 col-md-9"><input class="form-control" name="note" maxlength="200" placeholder="Note (optional, e.g. advance adjusted)" aria-label="Note"></div>
+      <div class="col-12 col-md-3"><button class="btn btn-em w-100">Pay salary</button></div></form>{% endif %}
+  </div></div>
+  {% endif %}
+</div>
+{% endblock %}

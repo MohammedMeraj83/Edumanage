@@ -1,0 +1,4 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Exam result{% endblock %}
+{% block content %}<div class="page-head"><div><h1>{{ exam.title }}</h1></div><a class="btn btn-outline-secondary" href="{{ url_for('online.exams') }}">Back</a></div>
+<div class="panel-card text-center"><div class="text-muted">Result</div><div class="display-5 fw-bold mt-2">{{ attempt.obtained_marks }} / {{ attempt.total_marks }}</div><div class="mt-2"><span class="badge text-bg-{{ 'success' if attempt.obtained_marks >= exam.pass_marks else 'danger' }}">{{ 'Pass' if attempt.obtained_marks >= exam.pass_marks else 'Needs improvement' }}</span></div><div class="small text-muted mt-3">Submitted {{ attempt.submitted_at.strftime('%d %b %Y, %I:%M %p') }}</div></div>{% endblock %}

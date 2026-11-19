@@ -1,0 +1,23 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Fees{% endblock %}
+{% block content %}
+{% if not student %}<div class="panel-card"><p class="text-muted mb-0">Your student profile is not linked yet.</p></div>{% else %}
+<div class="page-head"><div><h1>Fees · {{ student.full_name }}</h1><div class="text-muted small">{{ student.student_code }}</div></div></div>
+<div class="row g-3 mb-3">
+  <div class="col-4"><div class="panel-card h-100"><div class="stat-value money fs-4">{{ totals.billed|inr }}</div><div class="stat-label">Total</div></div></div>
+  <div class="col-4"><div class="panel-card h-100"><div class="stat-value money fs-4">{{ totals.paid|inr }}</div><div class="stat-label">Paid</div></div></div>
+  <div class="col-4"><div class="panel-card h-100"><div class="stat-value money fs-4 {{ 'text-danger' if totals.overdue > 0 }}">{{ totals.balance|inr }}</div><div class="stat-label">To pay</div></div></div>
+</div>
+<div class="panel-card mb-3"><h2>Fee dues</h2>
+  {% for d in dues %}<div class="doc-row"><div class="name"><strong>{{ d.label }}</strong><div class="small text-muted">Due {{ d.due_date.strftime('%d %b %Y') }}{% if d.overdue %} · <span class="text-danger">overdue</span>{% endif %}{% if d.discount > 0 %} · discount {{ d.discount|inr }}{% endif %}</div></div>
+    <div class="text-end"><div class="money fw-bold">{{ d.balance|inr if d.balance > 0 else d.net|inr }}</div>{{ m.status_pill(d.status) }}</div></div>
+  {% else %}<p class="text-muted mb-0">No fees yet.</p>{% endfor %}
+</div>
+<div class="panel-card"><h2>Payments and receipts</h2>
+  {% for p in payments %}<div class="doc-row"><div class="name"><strong>{{ p.receipt_no }}</strong><div class="small text-muted">{{ p.paid_on.strftime('%d %b %Y') }} · {{ p.mode_label }}</div></div>
+    <div class="d-flex gap-2 align-items-center"><span class="money fw-bold">{{ p.amount|inr }}</span><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('fees.receipt', payment_id=p.id) }}">Receipt</a></div></div>
+  {% else %}<p class="text-muted mb-0">No payments yet.</p>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

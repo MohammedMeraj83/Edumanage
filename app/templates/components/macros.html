@@ -1,0 +1,58 @@
+{# Form field with label + error text. cls = form-control | form-select #}
+{% macro field(f, cols="col-12", cls="form-control", help=None) %}
+<div class="{{ cols }}">
+  {{ f.label(class="form-label") }}
+  {{ f(class=cls ~ (" is-invalid" if f.errors else ""), **kwargs) }}
+  {% for e in f.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+  {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro check(f, cols="col-12") %}
+<div class="{{ cols }}">
+  <div class="form-check">
+    {{ f(class="form-check-input") }}
+    {{ f.label(class="form-check-label") }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro status_badge(active, on="Active", off="Inactive") %}
+  {% if active %}<span class="badge text-bg-success">{{ on }}</span>{% else %}<span class="badge text-bg-secondary">{{ off }}</span>{% endif %}
+{% endmacro %}
+
+{% macro empty_state(title, text, href=None, label=None) %}
+<div class="panel-card text-center py-5">
+  <h2 class="h5">{{ title }}</h2>
+  <p class="text-muted mb-3">{{ text }}</p>
+  {% if href %}<a class="btn btn-em" href="{{ href }}">{{ label }}</a>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro pager(p, endpoint, args) %}
+{% if p.pages > 1 %}
+<nav aria-label="Pages" class="mt-3">
+  <ul class="pagination flex-wrap justify-content-center mb-0">
+    <li class="page-item {{ 'disabled' if not p.has_prev }}"><a class="page-link" href="{{ url_for(endpoint, page=p.prev_num, **args) if p.has_prev else '#' }}">Prev</a></li>
+    {% for n in p.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+      {% if n %}<li class="page-item {{ 'active' if n == p.page }}"><a class="page-link" href="{{ url_for(endpoint, page=n, **args) }}">{{ n }}</a></li>
+      {% else %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+    {% endfor %}
+    <li class="page-item {{ 'disabled' if not p.has_next }}"><a class="page-link" href="{{ url_for(endpoint, page=p.next_num, **args) if p.has_next else '#' }}">Next</a></li>
+  </ul>
+</nav>
+<div class="text-center text-muted small mt-2">{{ p.total }} record{{ '' if p.total == 1 else 's' }}</div>
+{% elif p.total %}
+<div class="text-center text-muted small mt-2">{{ p.total }} record{{ '' if p.total == 1 else 's' }}</div>
+{% endif %}
+{% endmacro %}
+
+{% macro avatar(src, name, size=44) %}
+{% if src %}<img class="avatar" style="width:{{ size }}px;height:{{ size }}px" src="{{ src }}" alt="">
+{% else %}<span class="avatar avatar-initials" style="width:{{ size }}px;height:{{ size }}px;font-size:{{ (size * 0.4)|int }}px">{{ (name or '?')[:1]|upper }}</span>{% endif %}
+{% endmacro %}
+
+{% macro status_pill(status) %}
+{% set cls = {'active':'success','approved':'success','pending':'warning','inactive':'secondary','left':'dark','rejected':'danger'}.get(status, 'secondary') %}
+<span class="badge text-bg-{{ cls }}">{{ status|capitalize }}</span>
+{% endmacro %}

@@ -1,0 +1,25 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Library{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Library catalogue</h1></div>{% if can_create %}<a class="btn btn-em" href="{{ url_for('library.new') }}"><i class="bi bi-plus-lg"></i><span>Add book</span></a>{% endif %}</div>
+<form class="panel-card mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-12 col-md"><label class="form-label" for="library-q">Search</label><input id="library-q" class="form-control" name="q" value="{{ q }}" placeholder="Title, author or ISBN"></div>
+    <div class="col-12 col-md-3"><label class="form-label" for="library-status">Status</label><select id="library-status" class="form-select" name="status"><option value="">All</option><option value="active" {% if status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option></select></div>
+    <div class="col-12 col-md-auto d-flex align-items-end"><button class="btn btn-outline-secondary w-100" type="submit"><i class="bi bi-search"></i> Search</button></div>
+  </div>
+</form>
+<div class="d-flex justify-content-end mb-2"><a class="btn btn-outline-secondary btn-sm" href="{{ url_for('library.issues') }}"><i class="bi bi-arrow-left-right"></i> Issue register</a></div>
+<div class="table-responsive"><table class="table table-cards align-middle"><thead><tr><th>Book</th><th>Category</th><th>Copies</th><th>Location</th><th></th></tr></thead><tbody>
+{% for book in page.items %}<tr>
+<td data-label="Book"><strong>{{ book.title }}</strong><div class="small text-muted">{{ book.author }}{% if book.isbn %} · ISBN {{ book.isbn }}{% endif %}</div></td>
+<td data-label="Category">{{ book.category }}</td>
+<td data-label="Copies"><strong>{{ book.available_copies }}</strong> / {{ book.total_copies }} available</td>
+<td data-label="Location">{{ book.shelf_location or '—' }}</td>
+<td class="actions" data-label="Actions">
+  {% if current_user.has_permission('library.create') and book.status == 'active' and book.available_copies > 0 %}<a class="btn btn-sm btn-em" href="{{ url_for('library.issue', book_id=book.id) }}">Issue</a>{% endif %}
+  {% if current_user.has_permission('library.edit') %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('library.edit', book_id=book.id) }}">Edit</a>{% endif %}
+</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted py-4">No books found.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if page.pages > 1 %}{% set args = {} %}{% include 'components/pagination.html' ignore missing %}{% endif %}
+{% endblock %}

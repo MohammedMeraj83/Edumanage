@@ -1,0 +1,31 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Issue certificate{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Issue certificate</h1><div class="text-muted small mt-1">{{ student.full_name }} · {{ student.student_code }} · {{ student.class_name }} · {{ student.branch.name }}</div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('certificates.new') }}">Change student</a></div>
+<ul class="nav nav-pills mb-3">
+  {% for k, t in types.items() %}<li class="nav-item"><a class="nav-link {{ 'active' if cert_type == k }}" href="{{ url_for('certificates.issue', student_id=student.id, type=k) }}">{{ t.label }}</a></li>{% endfor %}
+</ul>
+<form method="post" class="panel-card" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="cert_type" value="{{ cert_type }}">
+  <p class="text-muted">{{ spec.help }}</p>
+  <div class="row g-3">
+    <div class="col-12 col-md-4"><label class="form-label" for="issue_date">Issue date</label>
+      <input class="form-control" type="date" id="issue_date" name="issue_date" max="{{ today.isoformat() }}" value="{{ form.get('issue_date') or today.isoformat() }}" required></div>
+    {% for f in spec.fields %}
+    <div class="col-12 {{ 'col-md-8' if f.kind == 'text' and loop.first else 'col-md-6' if f.kind == 'date' else '' }}">
+      <label class="form-label" for="f_{{ f.key }}">{{ f.label }}</label>
+      {% set val = form.get('f_' ~ f.key) if form else None %}
+      {% if f.kind == 'textarea' %}<textarea class="form-control" id="f_{{ f.key }}" name="f_{{ f.key }}" rows="3" maxlength="500">{{ val or '' }}</textarea>
+      {% elif f.kind == 'date' %}<input class="form-control" type="date" id="f_{{ f.key }}" name="f_{{ f.key }}" value="{{ val or '' }}" {{ 'required' if f.required }}>
+      {% else %}<input class="form-control" id="f_{{ f.key }}" name="f_{{ f.key }}" maxlength="200" value="{{ val if val is not none else f.default }}" placeholder="{{ f.hint }}" {{ 'required' if f.required }}>{% endif %}
+    </div>
+    {% endfor %}
+    {% if cert_type == 'transfer' %}
+    <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" id="allow_dues" name="allow_dues" value="1" {{ 'checked' if form.get('allow_dues') }}>
+      <label class="form-check-label" for="allow_dues">Issue even with pending fees (the certificate will say the fees were not cleared)</label></div></div>
+    {% endif %}
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm"><button class="btn btn-em">Issue certificate</button><a class="btn btn-outline-secondary" href="{{ url_for('certificates.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Results{% endblock %}
+{% block content %}
+{% if not student %}<div class="panel-card"><p class="text-muted mb-0">Your student profile is not linked yet.</p></div>{% else %}
+<div class="page-head"><div><h1>{{ student.full_name }}</h1><div class="text-muted small">Exam results</div></div></div>
+{% for exam, r in items %}
+<div class="panel-card mb-2">
+  <div class="d-flex justify-content-between align-items-start gap-2">
+    <div><div class="fw-bold">{{ exam.name }}</div><div class="small text-muted">{{ exam.type_label }} · {{ exam.start_date.strftime('%d %b %Y') }}</div>
+      <div class="mt-1">{{ fmt(r.obtained) }} / {{ fmt(r.max) }} · {{ r.percent }}% · Rank {{ r.rank }}</div></div>
+    <div class="text-end"><span class="badge text-bg-{{ grade_colors.get(r.grade, 'secondary') }} fs-6">{{ r.grade }}</span>
+      <div class="small mt-1">{{ 'Pass' if r.passed else 'Fail' }}</div></div>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary mt-2" href="{{ url_for(detail_endpoint, exam_id=exam.id, **({} if own else {'student_id': student.id})) }}">View marksheet</a>
+</div>
+{% else %}{{ m.empty_state("No results yet", "Results appear here after the institute publishes them.", None, None) }}{% endfor %}
+{% endif %}
+{% endblock %}

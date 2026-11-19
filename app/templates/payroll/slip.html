@@ -1,0 +1,19 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Salary slip{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3 no-print stack-sm"><a class="btn btn-em" href="{{ url_for('payroll.slip_pdf', payroll_id=p.id) }}" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a><button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button></div>
+<div class="receipt">
+  <div class="head"><div class="h5 fw-bold mb-0">{{ institute_name }}</div><div class="small text-muted">{{ p.branch.name }}</div><div class="fw-semibold mt-2">SALARY SLIP · {{ p.month.strftime('%B %Y') }}</div></div>
+  <dl class="kv mb-3"><dt>Name</dt><dd><strong>{{ p.person.full_name }}</strong> · {{ p.person.employee_code }}</dd><dt>Slip no.</dt><dd>{{ p.slip_no }}</dd></dl>
+  <table class="table table-sm"><tbody>
+    {% if p.base_amount > 0 %}<tr><td>Fixed monthly salary</td><td class="text-end money">{{ p.base_amount|inr }}</td></tr>{% endif %}
+    {% if p.pay_type != 'fixed' %}<tr><td>Lectures taken: {{ p.lectures_taught }} × {{ p.lecture_rate|inr }}</td><td class="text-end money">{{ p.lecture_amount|inr }}</td></tr>{% endif %}
+    {% if p.allowance > 0 %}<tr><td>Allowance</td><td class="text-end money">{{ p.allowance|inr }}</td></tr>{% endif %}
+    {% if p.bonus > 0 %}<tr><td>Bonus</td><td class="text-end money">{{ p.bonus|inr }}</td></tr>{% endif %}
+    {% if p.auto_deduction > 0 %}<tr><td>Missed lectures: {{ p.lectures_missed }} × {{ p.missed_rate|inr }}</td><td class="text-end money text-danger">−{{ p.auto_deduction|inr }}</td></tr>{% endif %}
+    {% if p.deduction > 0 %}<tr><td>Deduction{% if p.adjustment_note %} — {{ p.adjustment_note }}{% endif %}</td><td class="text-end money text-danger">−{{ p.deduction|inr }}</td></tr>{% endif %}
+    <tr class="fw-bold"><td>Net salary</td><td class="text-end money">{{ p.net_amount|inr }}</td></tr></tbody></table>
+  {% for sp in p.payments if sp.status == 'active' %}<p class="small mb-1">Paid {{ sp.amount|inr }} on {{ sp.paid_on.strftime('%d %b %Y') }} ({{ sp.mode }})</p>{% endfor %}
+  <p class="small text-muted mb-0">Computer-generated salary slip.</p>
+</div>
+{% endblock %}

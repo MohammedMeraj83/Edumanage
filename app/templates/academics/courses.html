@@ -1,0 +1,31 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Courses{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Courses</h1>
+  {% if current_user.is_owner %}
+  <div class="d-flex gap-2 stack-sm">
+    <form method="post" action="{{ url_for('academics.starter_set') }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-secondary w-100" data-confirm="Adds common courses (Class 8-10, 11-12 Science, NEET, JEE, MHT-CET) and subjects that are missing. Nothing existing is changed." data-title="Add starter set?" data-ok-label="Add" data-ok-class="btn-em">Add starter set</button></form>
+    <a class="btn btn-em" href="{{ url_for('academics.course_new') }}"><i class="bi bi-plus-lg"></i> Add course</a>
+  </div>
+  {% endif %}
+</div>
+{% if items %}
+<div class="row g-3">
+  {% for c in items %}
+  <div class="col-12 col-md-6 col-xl-4"><div class="panel-card h-100">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div class="fw-bold">{{ c.name }}</div>{{ m.status_badge(c.is_active) }}
+    </div>
+    {% if c.description %}<div class="text-muted small">{{ c.description }}</div>{% endif %}
+    <div class="mt-3">{% for s in c.subjects %}<span class="badge text-bg-light border me-1 mb-1">{{ s.name }}</span>{% else %}<span class="text-muted small">No subjects added yet.</span>{% endfor %}</div>
+    {% if current_user.is_owner %}<a class="btn btn-sm btn-outline-secondary mt-3" href="{{ url_for('academics.course_edit', course_id=c.id) }}">Edit</a>{% endif %}
+  </div></div>
+  {% endfor %}
+</div>
+{% else %}
+  {{ m.empty_state("No courses yet", "Add your courses (like NEET or Class 10), or load the starter set.", url_for('academics.course_new') if current_user.is_owner else None, "Add course") }}
+{% endif %}
+{% endblock %}

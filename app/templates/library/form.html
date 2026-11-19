@@ -1,0 +1,17 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ 'Edit book' if book else 'Add book' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit book' if book else 'Add book' }}</h1></div><a class="btn btn-outline-secondary" href="{{ url_for('library.index') }}">Back</a></div>
+<form class="panel-card" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="row g-3">
+{% if branches %}<div class="col-12"><label class="form-label" for="branch_id">Branch *</label><select id="branch_id" class="form-select" name="branch_id" required><option value="">Choose branch</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+<div class="col-12"><label class="form-label" for="title">Title *</label><input id="title" class="form-control" name="title" value="{{ form.title or (book.title if book else '') }}" required></div>
+<div class="col-md-6"><label class="form-label" for="author">Author *</label><input id="author" class="form-control" name="author" value="{{ form.author or (book.author if book else '') }}" required></div>
+<div class="col-md-6"><label class="form-label" for="isbn">ISBN</label><input id="isbn" class="form-control" name="isbn" value="{{ form.isbn or (book.isbn if book else '') }}"></div>
+<div class="col-md-6"><label class="form-label" for="category">Category</label><input id="category" class="form-control" name="category" value="{{ form.category or (book.category if book else 'General') }}"></div>
+<div class="col-md-6"><label class="form-label" for="publisher">Publisher</label><input id="publisher" class="form-control" name="publisher" value="{{ form.publisher or (book.publisher if book else '') }}"></div>
+<div class="col-md-4"><label class="form-label" for="edition">Edition</label><input id="edition" class="form-control" name="edition" value="{{ form.edition or (book.edition if book else '') }}"></div>
+<div class="col-md-4"><label class="form-label" for="copies">Total copies *</label><input id="copies" class="form-control" type="number" min="1" name="total_copies" value="{{ form.total_copies or (book.total_copies if book else 1) }}" required></div>
+<div class="col-md-4"><label class="form-label" for="location">Shelf location</label><input id="location" class="form-control" name="shelf_location" value="{{ form.shelf_location or (book.shelf_location if book else '') }}"></div>
+</div><div class="d-flex justify-content-end gap-2 mt-4"><a class="btn btn-outline-secondary" href="{{ url_for('library.index') }}">Cancel</a><button class="btn btn-em" type="submit">Save book</button></div>
+</form>{% endblock %}

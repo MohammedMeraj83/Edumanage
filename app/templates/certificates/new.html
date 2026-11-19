@@ -1,0 +1,16 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Issue certificate{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Issue certificate</h1><a class="btn btn-outline-secondary" href="{{ url_for('certificates.index') }}">Back</a></div>
+<form class="panel-card mb-3" method="get">
+  <label class="form-label" for="q">Find the student</label>
+  <div class="d-flex gap-2"><input class="form-control" id="q" name="q" value="{{ q }}" placeholder="Name or student ID (at least 2 letters)" autofocus><button class="btn btn-em">Search</button></div>
+</form>
+{% if q %}
+  {% for s in students %}
+  <div class="doc-row"><div class="name"><strong>{{ s.full_name }}</strong><div class="small text-muted">{{ s.student_code }} · {{ s.class_name }} · {{ s.branch.name }} · {{ s.status|capitalize }}</div></div>
+    <a class="btn btn-sm btn-em" href="{{ url_for('certificates.issue', student_id=s.id) }}">Choose</a></div>
+  {% else %}{{ m.empty_state("No student found", "Check the spelling or try the student ID.", None, None) }}{% endfor %}
+{% endif %}
+{% endblock %}

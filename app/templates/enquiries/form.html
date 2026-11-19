@@ -1,0 +1,28 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}New enquiry{% endblock %}
+{% block content %}
+<div class="page-head"><h1>New enquiry</h1></div>
+<div class="panel-card">
+  {% for error in errors %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endfor %}
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if current_user.is_owner %}
+    <div class="mb-3">
+      <label class="form-label" for="branch_id">Branch</label>
+      <select class="form-select" id="branch_id" name="branch_id" required>
+        <option value="">Choose a branch</option>
+        {% for branch in branches %}<option value="{{ branch.id }}" {{ 'selected' if form.get('branch_id')|int == branch.id }}>{{ branch.name }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="row g-3">
+      <div class="col-12 col-md-6"><label class="form-label" for="full_name">Name</label><input class="form-control" id="full_name" name="full_name" maxlength="120" required value="{{ form.get('full_name', '') }}"></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="course_interest">Course or class</label><input class="form-control" id="course_interest" name="course_interest" maxlength="120" value="{{ form.get('course_interest', '') }}"></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="phone">Phone</label><input class="form-control" id="phone" name="phone" maxlength="20" value="{{ form.get('phone', '') }}"></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="email">Email</label><input class="form-control" id="email" name="email" type="email" maxlength="120" value="{{ form.get('email', '') }}"></div>
+      <div class="col-12"><label class="form-label" for="message">Enquiry notes</label><textarea class="form-control" id="message" name="message" rows="4" maxlength="2000">{{ form.get('message', '') }}</textarea></div>
+    </div>
+    <div class="d-flex gap-2 mt-4"><button class="btn btn-em">Save enquiry</button><a class="btn btn-outline-secondary" href="{{ url_for('enquiries.index') }}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

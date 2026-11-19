@@ -1,0 +1,40 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ hw.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ hw.title }}</h1>
+    <div class="text-muted small mt-1">{{ hw.batch.name }} · Given {{ hw.assigned_on.strftime('%d %b %Y') }} · Last date {{ hw.due_date.strftime('%d %b %Y') }} <span class="badge text-bg-{{ due_css }}">{{ due }}</span></div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('homework.index') }}">Back</a>
+    {% if current_user.has_permission('homework.edit') %}<a class="btn btn-outline-secondary" href="{{ url_for('homework.edit', hw_id=hw.id) }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+    {% if current_user.has_permission('homework.delete') %}
+    <form method="post" action="{{ url_for('homework.delete', hw_id=hw.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger w-100" data-confirm="This homework and its checking notes will be deleted." data-title="Delete homework?" data-ok-label="Delete">Delete</button></form>{% endif %}
+  </div>
+</div>
+{% if hw.description or hw.attachment %}
+<div class="panel-card mb-3">
+  {% if hw.description %}<div style="white-space:pre-wrap">{{ hw.description }}</div>{% endif %}
+  {% if hw.attachment %}<div class="{{ 'mt-3' if hw.description }}"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('homework.file', hw_id=hw.id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> {{ hw.attachment_name }}</a></div>{% endif %}
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('homework.check', hw_id=hw.id) }}" class="panel-card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2>Checking sheet</h2>
+  <div class="form-text mb-2">Choose for each student whether the homework is done. Leave it empty if you have not checked yet.</div>
+  {% for s in students %}{% set c = checks.get(s.id) %}
+  <div class="doc-row">
+    <div class="name"><strong>{{ s.full_name }}</strong><div class="small text-muted">{{ s.student_code }}</div></div>
+    <div class="d-flex gap-2 align-items-center">
+      <select class="form-select" style="width:9.5rem" name="s_{{ s.id }}" aria-label="Status of {{ s.full_name }}" {{ '' if can_check else 'disabled' }}>
+        <option value="">Not checked</option>
+        {% for k, label in statuses %}<option value="{{ k }}" {{ 'selected' if c and c.status == k }}>{{ label }}</option>{% endfor %}
+      </select>
+      <input class="form-control d-none d-md-block" style="width:12rem" name="r_{{ s.id }}" maxlength="120" value="{{ c.remark if c and c.remark else '' }}" placeholder="Remark (optional)" aria-label="Remark for {{ s.full_name }}" {{ '' if can_check else 'disabled' }}>
+    </div>
+  </div>
+  {% else %}<p class="text-muted mb-0">No active student in this batch.</p>{% endfor %}
+  {% if students and can_check %}<button class="btn btn-em mt-3">Save checking</button>{% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+instance/
+uploads/*
+generated/*
+backups/*
+!uploads/.gitkeep
+!generated/.gitkeep
+!backups/.gitkeep
+.pytest_cache/

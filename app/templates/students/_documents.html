@@ -1,0 +1,35 @@
+{# needs: docs, doc_types, kind ('student'|'admission'), owner_id, can_edit #}
+<div class="panel-card">
+  <h2>Documents</h2>
+  {% for d in docs %}
+    <div class="doc-row">
+      <div class="name">
+        <a href="{{ url_for('students.document_file', doc_id=d.id) }}" target="_blank" rel="noopener">{{ d.original_name }}</a>
+        <div class="small text-muted">{{ d.type_label }} · {{ (d.size / 1024)|round(0)|int }} KB · {{ d.created_at|localtime('%d %b %Y') }}</div>
+      </div>
+      {% if can_edit %}
+      <form method="post" class="m-0" action="{% if kind == 'student' %}{{ url_for('students.delete_document', student_id=owner_id, doc_id=d.id) }}{% else %}{{ url_for('admissions.delete_document', admission_id=owner_id, doc_id=d.id) }}{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-danger" data-confirm="This file will be deleted permanently." data-title="Delete document?" data-ok-label="Delete" aria-label="Delete {{ d.original_name }}"><i class="bi bi-trash"></i></button>
+      </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="text-muted mb-0">No documents uploaded yet.</p>
+  {% endfor %}
+
+  {% if can_edit %}
+  <form method="post" enctype="multipart/form-data" class="row g-2 mt-3 pt-3 border-top"
+        action="{% if kind == 'student' %}{{ url_for('students.upload_document', student_id=owner_id) }}{% else %}{{ url_for('admissions.upload_document', admission_id=owner_id) }}{% endif %}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-12 col-md-4">
+      <select class="form-select" name="doc_type" aria-label="Document type">
+        {% for v, l in doc_types %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-5"><input class="form-control" type="file" name="file" accept=".pdf,image/png,image/jpeg,image/webp" aria-label="File"></div>
+    <div class="col-12 col-md-3"><button class="btn btn-outline-secondary w-100"><i class="bi bi-upload"></i> Upload</button></div>
+    <div class="form-text">PDF, PNG, JPG or WEBP, up to 5 MB.</div>
+  </form>
+  {% endif %}
+</div>

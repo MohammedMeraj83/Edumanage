@@ -1,0 +1,23 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}My notifications{% endblock %}
+{% block content %}
+<div class="page-head"><h1>My notifications</h1></div>
+{% if page.items %}
+<div class="list-group" id="notification-list">
+  {% for notification in page.items %}
+  <a class="list-group-item list-group-item-action py-3 {{ 'list-group-item-light' if notification.read_at else '' }}" href="{{ url_for('notifications.detail', notification_id=notification.id) }}">
+    <div class="d-flex justify-content-between gap-3">
+      <strong>{{ notification.notice.title }}</strong>
+      {% if not notification.read_at %}<span class="badge text-bg-primary">Unread</span>{% endif %}
+    </div>
+    <div class="text-muted text-truncate">{{ notification.notice.body }}</div>
+    <small class="text-muted">{{ notification.created_at|localtime }}</small>
+  </a>
+  {% endfor %}
+</div>
+{{ m.pager(page, 'notifications.inbox', {}) }}
+{% else %}
+{{ m.empty_state("You're all caught up", "Notices sent to your role and branch will appear here.") }}
+{% endif %}
+{% endblock %}

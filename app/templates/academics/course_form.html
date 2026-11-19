@@ -1,0 +1,24 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit course' if item else 'New course' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit ' ~ item.name if item else 'Add a course' }}</h1></div>
+<form method="post" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {{ m.field(form.name, "col-12 col-md-6", placeholder="e.g. NEET") }}
+    {{ m.field(form.description, "col-12 col-md-6") }}
+    <div class="col-12">
+      <label class="form-label">{{ form.subjects.label.text }}</label>
+      <div class="row g-2">
+        {% for sub in form.subjects %}
+        <div class="col-6 col-md-3"><div class="form-check">{{ sub(class="form-check-input") }}{{ sub.label(class="form-check-label") }}</div></div>
+        {% else %}<div class="col-12 text-muted">Add subjects first (Subjects page).</div>{% endfor %}
+      </div>
+    </div>
+    {{ m.check(form.is_active) }}
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm"><button class="btn btn-em">{{ 'Save changes' if item else 'Create course' }}</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('academics.courses') }}">Cancel</a></div>
+</form>
+{% endblock %}

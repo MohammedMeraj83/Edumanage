@@ -1,0 +1,10 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}New exam{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Which branch is this exam for?</h1></div>
+<div class="row g-3">
+  {% for b in branches %}
+  <div class="col-12 col-md-6 col-xl-4"><a class="panel-card branch-card" href="{{ url_for('exams.new', branch=b.id) }}"><div class="fw-bold">{{ b.name }}</div><div class="text-muted small">{{ b.code }}{% if b.city %} · {{ b.city }}{% endif %}</div></a></div>
+  {% endfor %}
+</div>
+{% endblock %}

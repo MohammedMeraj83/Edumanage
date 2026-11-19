@@ -1,0 +1,28 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Pending fees{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Pending fees</h1><div class="text-muted small mt-1">{{ rows|length }} student{{ '' if rows|length == 1 else 's' }} · total <strong class="money">{{ total|inr }}</strong></div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('fees.pending_xlsx', **request.args) }}"><i class="bi bi-file-earmark-excel"></i> Excel</a></div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Name, ID or parent phone" aria-label="Search"></div>
+  <div class="col-6 col-md-3"><select class="form-select" name="overdue" aria-label="Which dues"><option value="1" {{ 'selected' if only_overdue }}>Overdue only</option><option value="0" {{ 'selected' if not only_overdue }}>All pending</option></select></div>
+  {% if branches %}<div class="col-6 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if rows %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Student</th><th>Class</th><th>Parent phone</th><th>Dues</th><th>Oldest due</th><th class="text-end">Pending</th><th></th></tr></thead>
+  <tbody>{% for r in rows %}{% set st = r.student %}
+    <tr><td class="person-td" data-label="Student"><strong>{{ st.full_name }}</strong><div class="small text-muted">{{ st.student_code }} · {{ st.branch.name }}</div></td>
+      <td data-label="Class">{{ st.class_name }}</td>
+      <td data-label="Parent phone"><a href="tel:{{ st.guardian_phone }}">{{ st.guardian_phone }}</a></td>
+      <td data-label="Dues">{{ r.count }}</td>
+      <td data-label="Oldest due">{{ r.oldest.strftime('%d %b %Y') }}{% if r.oldest < today %} <span class="text-danger small">({{ (today - r.oldest).days }}d)</span>{% endif %}</td>
+      <td data-label="Pending" class="text-end money fw-bold">{{ r.balance|inr }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('fees.student', student_id=st.id) }}">Open</a>
+        {% if current_user.has_permission('payments.create') %}<a class="btn btn-sm btn-em" href="{{ url_for('fees.collect', student_id=st.id) }}">Collect</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}{{ m.empty_state("Nothing pending", "No fee is overdue for these filters.", None, None) }}{% endif %}
+{% endblock %}

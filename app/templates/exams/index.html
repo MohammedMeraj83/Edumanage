@@ -1,0 +1,34 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Exams & results{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Exams &amp; results</h1>
+  {% if current_user.has_permission('exams.create') and current_user.role_name in ['owner', 'branch_admin'] %}<a class="btn btn-em" href="{{ url_for('exams.new') }}"><i class="bi bi-plus-lg"></i> New exam</a>{% endif %}</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-6 col-md-3"><select class="form-select" name="session" aria-label="Session">{% for s in sessions %}<option value="{{ s.id }}" {{ 'selected' if session_id == s.id }}>{{ s.name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="type" aria-label="Type"><option value="">All types</option>{% for k, label in types %}<option value="{{ k }}" {{ 'selected' if kind == k }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="state" aria-label="Status"><option value="">All</option><option value="pending" {{ 'selected' if state == 'pending' }}>Not published</option><option value="published" {{ 'selected' if state == 'published' }}>Published</option></select></div>
+  {% if branches %}<div class="col-6 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Exam</th><th>Type</th><th>Dates</th><th>Papers</th><th>Results</th><th></th></tr></thead>
+  <tbody>
+  {% for e in page.items %}
+    <tr>
+      <td class="person-td" data-label="Exam"><strong>{{ e.name }}</strong><div class="small text-muted">{{ e.branch.name }} · {{ e.session.name }}</div></td>
+      <td data-label="Type">{{ e.type_label }}</td>
+      <td data-label="Dates" class="small">{{ e.start_date.strftime('%d %b') }}{% if e.end_date != e.start_date %} – {{ e.end_date.strftime('%d %b %Y') }}{% else %} {{ e.start_date.strftime('%Y') }}{% endif %}</td>
+      <td data-label="Papers">{{ e.papers|length }}</td>
+      <td data-label="Results">{% if e.results_published %}<span class="badge text-bg-success">Published</span>{% else %}<span class="badge text-bg-secondary">Not published</span>{% endif %}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('exams.detail', exam_id=e.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'exams.index', args) }}
+{% else %}{{ m.empty_state("No exams found", "Create an exam, add a paper for each batch, then enter marks.", url_for('exams.new') if current_user.has_permission('exams.create') and current_user.role_name in ['owner', 'branch_admin'] else None, "New exam") }}{% endif %}
+{% endblock %}

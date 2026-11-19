@@ -1,0 +1,26 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}{{ 'Edit document' if doc else 'Add document' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit document' if doc else 'Add document' }}</h1></div>
+<form method="post" enctype="multipart/form-data" class="panel-card" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="row g-3">
+    <div class="col-12"><label class="form-label" for="title">Title</label>
+      <input class="form-control" id="title" name="title" maxlength="150" required value="{{ form.get('title') or (doc.title if doc else '') }}" placeholder="e.g. Fee structure 2026-27"></div>
+    <div class="col-12 col-md-4"><label class="form-label" for="category">Category</label>
+      <select class="form-select" id="category" name="category">{% for k, label in categories %}<option value="{{ k }}" {{ 'selected' if (form.get('category') or (doc.category if doc else 'other')) == k }}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-12 col-md-4"><label class="form-label" for="audience">Who can see it</label>
+      <select class="form-select" id="audience" name="audience">{% for k, label in audiences %}<option value="{{ k }}" {{ 'selected' if (form.get('audience') or (doc.audience if doc else 'all')) == k }}>{{ label }}</option>{% endfor %}</select></div>
+    {% if not doc and current_user.is_owner %}
+    <div class="col-12 col-md-4"><label class="form-label" for="branch_id">Branch</label>
+      <select class="form-select" id="branch_id" name="branch_id"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if (form.get('branch_id')|string) == (b.id|string) }}>{{ b.name }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <div class="col-12"><label class="form-label" for="description">Description (optional)</label>
+      <input class="form-control" id="description" name="description" maxlength="500" value="{{ form.get('description') or (doc.description if doc and doc.description else '') }}"></div>
+    <div class="col-12"><label class="form-label" for="file">File{{ '' if doc else '' }}</label>
+      <input class="form-control" type="file" id="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt">
+      <div class="form-text">PDF, image, Word, PowerPoint, Excel or text. Up to 10 MB.{% if doc %} Choose a new file only to replace {{ doc.original_name }}.{% endif %}</div></div>
+  </div>
+  <div class="d-flex gap-2 mt-4 stack-sm"><button class="btn btn-em">{{ 'Save changes' if doc else 'Add document' }}</button><a class="btn btn-outline-secondary" href="{{ url_for('documents.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

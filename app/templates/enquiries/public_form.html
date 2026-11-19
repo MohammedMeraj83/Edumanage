@@ -1,0 +1,61 @@
+{% extends "base/base.html" %}
+{% block title %}Enquiry · {{ institute_name }}{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <section class="auth-brand">
+    <div class="mark">{{ institute_name }}</div>
+    <div>
+      <h1>We'd be happy to help.</h1>
+      <p>Tell us what you are looking for and our team will get in touch.</p>
+    </div>
+    <a class="small text-secondary" href="{{ url_for('auth.login') }}">Staff sign in</a>
+  </section>
+  <section class="auth-form">
+    <div class="auth-card">
+      <h2 class="mb-1">Send an enquiry</h2>
+      <p class="text-muted mb-4">Share your contact details and course interest.</p>
+      {% for error in errors %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endfor %}
+      <form method="post" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="visually-hidden" aria-hidden="true">
+          <label for="website">Leave this field empty</label>
+          <input id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="full_name">Your name</label>
+          <input class="form-control" id="full_name" name="full_name" maxlength="120" required value="{{ form.get('full_name', '') }}">
+        </div>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="phone">Phone</label>
+            <input class="form-control" id="phone" name="phone" maxlength="20" autocomplete="tel" value="{{ form.get('phone', '') }}">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="email">Email</label>
+            <input class="form-control" id="email" name="email" type="email" maxlength="120" autocomplete="email" value="{{ form.get('email', '') }}">
+          </div>
+        </div>
+        <div class="form-text mb-3">Provide at least one: phone or email.</div>
+        <div class="mb-3">
+          <label class="form-label" for="branch_id">Preferred branch <span class="text-muted">(optional)</span></label>
+          <select class="form-select" id="branch_id" name="branch_id">
+            <option value="">No preference</option>
+            {% for branch in branches %}
+            <option value="{{ branch.id }}" {{ 'selected' if form.get('branch_id')|int == branch.id }}>{{ branch.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="course_interest">Course or class of interest</label>
+          <input class="form-control" id="course_interest" name="course_interest" maxlength="120" value="{{ form.get('course_interest', '') }}">
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="message">How can we help?</label>
+          <textarea class="form-control" id="message" name="message" rows="4" maxlength="2000">{{ form.get('message', '') }}</textarea>
+        </div>
+        <button class="btn btn-em w-100 py-2">Send enquiry</button>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

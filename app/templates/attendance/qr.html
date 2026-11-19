@@ -1,0 +1,18 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Branch QR{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>QR code · {{ branch.name }}</h1></div><button class="btn btn-outline-secondary d-print-none" onclick="window.print()"><i class="bi bi-printer"></i> Print</button></div>
+{% if not geo %}
+  <div class="alert alert-warning">Set the branch location first. The QR is created together with it. <a class="alert-link" href="{{ url_for('attendance.location', branch=branch.id) }}">Set location</a></div>
+{% else %}
+<div class="panel-card text-center" style="max-width:420px">
+  <h2>{{ branch.name }}</h2>
+  <img src="{{ url_for('attendance.qr_png', branch=branch.id) }}" alt="QR code" class="img-fluid" style="max-width:300px">
+  <p class="mt-2 mb-0 fw-semibold">Teachers: scan to start your class</p>
+  <p class="text-muted small mb-0">Students: scan to confirm you are here</p>
+</div>
+<p class="text-muted small mt-3 d-print-none text-break">Link inside the QR: {{ link }}</p>
+<form method="post" action="{{ url_for('attendance.qr_regenerate', branch=branch.id) }}" class="d-print-none"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-outline-danger" data-confirm="The old printed QR stops working immediately. You must print and paste the new one." data-title="Create a new QR?" data-ok-label="Create new QR">Replace QR code</button></form>
+{% endif %}
+{% endblock %}

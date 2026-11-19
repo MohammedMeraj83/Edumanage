@@ -1,0 +1,29 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Set salary{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Salary · {{ person.full_name }}</h1><div class="text-muted small mt-1">{{ person.employee_code }} · {{ person.branch.name }}</div></div></div>
+<form method="post" class="panel-card" style="max-width:640px" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="row g-3">
+    <div class="col-12"><label class="form-label" for="pay_type">How is this person paid?</label>
+      <select class="form-select" id="pay_type" name="pay_type">{% for v, l in pay_types %}<option value="{{ v }}" {{ 'selected' if (request.form.get('pay_type') or (st.pay_type if st else 'fixed')) == v }}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-6" id="baseBox"><label class="form-label" for="base_salary">Monthly salary (₹)</label><input class="form-control" id="base_salary" name="base_salary" type="number" step="0.01" min="0" inputmode="decimal" value="{{ request.form.get('base_salary') or (st.base_salary if st and st.base_salary > 0 else '') }}"></div>
+    {% if kind == 'teacher' %}
+    <div class="col-6" id="rateBox"><label class="form-label" for="per_lecture_rate">Per lecture (₹)</label><input class="form-control" id="per_lecture_rate" name="per_lecture_rate" type="number" step="0.01" min="0" inputmode="decimal" value="{{ request.form.get('per_lecture_rate') or (st.per_lecture_rate if st and st.per_lecture_rate > 0 else '') }}"></div>
+    <div class="col-12"><label class="form-label" for="missed_deduction">Deduction for each missed lecture (₹, optional)</label><input class="form-control" id="missed_deduction" name="missed_deduction" type="number" step="0.01" min="0" inputmode="decimal" value="{{ request.form.get('missed_deduction') or (st.missed_lecture_deduction if st else 0) }}">
+      <div class="form-text">A lecture is "missed" when the teacher never started it and was not on approved leave. Leave 0 for no automatic deduction.</div></div>
+    {% endif %}
+  </div>
+  <div class="form-text mt-3">Changing this affects payroll created from now on. Salaries already made keep their numbers.</div>
+  <div class="d-flex gap-2 mt-3 stack-sm"><button class="btn btn-em">Save salary</button><a class="btn btn-outline-secondary" href="{{ url_for('payroll.structures') }}">Cancel</a></div>
+</form>
+{% endblock %}
+{% block page_scripts %}
+<script>
+  (function () {
+    var t = document.getElementById("pay_type"), b = document.getElementById("baseBox"), r = document.getElementById("rateBox");
+    function ui() { if (b) b.style.display = t.value === "per_lecture" ? "none" : ""; if (r) r.style.display = t.value === "fixed" ? "none" : ""; }
+    t.addEventListener("change", ui); ui();
+  })();
+</script>
+{% endblock %}

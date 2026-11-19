@@ -1,0 +1,20 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Add branch admin{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Add admin for {{ branch.name }}</h1></div>
+<form method="post" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {{ m.field(form.full_name, "col-12 col-md-6") }}
+    {{ m.field(form.username, "col-12 col-md-6", autocapitalize="none", autocomplete="off") }}
+    {{ m.field(form.email, "col-12 col-md-6", type="email") }}
+    {{ m.field(form.phone, "col-12 col-md-6", type="tel", inputmode="tel") }}
+  </div>
+  <p class="text-muted small mt-3 mb-0">A temporary password is created for you after saving. The admin must change it the first time they sign in.</p>
+  <div class="d-flex gap-2 mt-4 stack-sm">
+    <button class="btn btn-em">Create admin</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('branches.detail', branch_id=branch.id) }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

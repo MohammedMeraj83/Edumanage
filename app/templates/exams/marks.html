@@ -1,0 +1,43 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Marks{% endblock %}
+{% block content %}
+{% set max = fmt(paper.max_marks) %}
+<div class="page-head">
+  <div><h1>{{ paper.batch.subject.name }} · {{ paper.exam.name }}</h1>
+    <div class="text-muted small mt-1">{{ paper.batch.name }} · {{ paper.exam_date.strftime('%d %b %Y') }} · Max {{ max }}, pass {{ fmt(paper.pass_marks) }}
+      {% if paper.locked %} · <span class="badge text-bg-dark"><i class="bi bi-lock-fill"></i> Submitted</span>{% endif %}</div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('exams.detail', exam_id=paper.exam_id) }}">Back to exam</a>
+</div>
+{% if not editable and why %}<div class="alert alert-info">{{ why }}</div>{% endif %}
+
+{% if students %}
+<form method="post" class="panel-card" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="form-text mb-2">Write the marks out of {{ max }}. Write <strong>AB</strong> if the student was absent. Leave empty if not known yet.</div>
+  {% for s in students %}
+    {% set row = existing.get(s.id) %}
+    {% if posted is not none %}{% set val = posted[s.id][0] or '' %}{% set rem = posted[s.id][1] or '' %}
+    {% else %}{% set val = ('AB' if row.absent else fmt(row.marks)) if row else '' %}{% set rem = (row.remark or '') if row else '' %}{% endif %}
+    <div class="doc-row">
+      <div class="name"><strong>{{ s.full_name }}</strong><div class="small text-muted">{{ s.student_code }}</div></div>
+      <div class="d-flex gap-2 align-items-center">
+        <input class="form-control" style="width:6.5rem" name="m_{{ s.id }}" value="{{ val }}" inputmode="decimal" autocomplete="off" aria-label="Marks of {{ s.full_name }}" {{ '' if editable else 'disabled' }}>
+        <input class="form-control d-none d-md-block" style="width:12rem" name="r_{{ s.id }}" value="{{ rem }}" maxlength="120" placeholder="Remark (optional)" aria-label="Remark for {{ s.full_name }}" {{ '' if editable else 'disabled' }}>
+      </div>
+    </div>
+  {% endfor %}
+  {% if editable %}
+  <div class="d-flex flex-wrap gap-2 mt-3 stack-sm">
+    <button class="btn btn-em" name="action" value="save">Save marks</button>
+    <button class="btn btn-outline-secondary" name="action" value="submit" data-confirm="After submitting, marks are locked. Only an admin can unlock them." data-title="Submit marks?" data-ok-label="Submit">Save &amp; submit</button>
+  </div>
+  {% endif %}
+</form>
+{% else %}{{ m.empty_state("No students", "No active student is enrolled in this batch.", None, None) }}{% endif %}
+
+{% if paper.locked and can_unlock and not paper.exam.results_published %}
+<form method="post" action="{{ url_for('exams.unlock', paper_id=paper.id) }}" class="mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-outline-secondary" data-confirm="The teacher will be able to change marks again." data-title="Unlock this paper?" data-ok-label="Unlock">Unlock this paper</button></form>
+{% endif %}
+{% endblock %}

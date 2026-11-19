@@ -1,0 +1,32 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Documents{% endblock %}
+{% block content %}
+{% if not student %}<div class="panel-card"><p class="text-muted mb-0">Your student profile is not linked yet.</p></div>{% else %}
+<div class="page-head"><div><h1>Documents</h1><div class="text-muted small">{{ student.full_name }}</div></div></div>
+
+<div class="panel-card mb-3">
+  <h2>ID card</h2>
+  {% if card %}<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><strong>{{ card.card_no }}</strong><div class="small text-muted">Valid till {{ card.valid_until.strftime('%d %b %Y') }}</div></div>
+    <a class="btn btn-sm btn-em" href="{{ url_for(card_pdf, **pdf_args) }}" target="_blank" rel="noopener"><i class="bi bi-download"></i> View / print</a></div>
+  {% else %}<p class="text-muted mb-0">No ID card has been issued yet. Ask the office.</p>{% endif %}
+</div>
+
+<div class="panel-card mb-3">
+  <h2>Certificates</h2>
+  {% for c in certs %}
+  <div class="doc-row"><div class="name"><strong>{{ type_label(c.cert_type) }}</strong><div class="small text-muted">{{ c.certificate_no }} · {{ c.issue_date.strftime('%d %b %Y') }}</div></div>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for(cert_pdf, cert_id=c.id, **pdf_args) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a></div>
+  {% else %}<p class="text-muted mb-0">No certificates issued yet.</p>{% endfor %}
+</div>
+
+<div class="panel-card">
+  <h2>From the institute</h2>
+  {% for d in docs %}
+  <div class="doc-row"><div class="name"><strong>{{ d.title }}</strong><div class="small text-muted">{{ d.category_label }} · {{ d.created_at.strftime('%d %b %Y') }}{% if d.description %} · {{ d.description }}{% endif %}</div></div>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('documents.file', doc_id=d.id) }}" target="_blank" rel="noopener"><i class="bi bi-download"></i> Download</a></div>
+  {% else %}<p class="text-muted mb-0">Nothing shared yet.</p>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

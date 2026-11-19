@@ -1,0 +1,83 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ parent.full_name }}{% endblock %}
+{% block content %}
+{% set can_edit = current_user.has_permission('parents.edit') %}
+<div class="page-head">
+  <div class="d-flex align-items-center gap-3">
+    {{ m.avatar(None, parent.full_name, 56) }}
+    <div><h1>{{ parent.full_name }}</h1><div class="text-muted small mt-1">{{ parent.parent_code }} · {{ m.status_pill(parent.status) }}</div></div>
+  </div>
+  {% if can_edit %}
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('parents.edit', parent_id=parent.id) }}"><i class="bi bi-pencil"></i> Edit</a>
+    <form method="post" action="{{ url_for('parents.change_status', parent_id=parent.id) }}" class="m-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if parent.status == 'active' %}
+        <input type="hidden" name="status" value="inactive">
+        <button class="btn btn-outline-danger w-100" data-confirm="{{ parent.full_name }} will not be able to sign in. Records are kept." data-title="Mark inactive?" data-ok-label="Mark inactive">Mark inactive</button>
+      {% else %}
+        <input type="hidden" name="status" value="active"><button class="btn btn-em w-100">Mark active</button>
+      {% endif %}
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6"><div class="panel-card h-100">
+    <h2>Details</h2>
+    <dl class="kv">
+      <dt>Phone</dt><dd><a href="tel:{{ parent.phone }}">{{ parent.phone }}</a></dd>
+      <dt>Email</dt><dd>{{ parent.email or '—' }}</dd>
+      <dt>Occupation</dt><dd>{{ parent.occupation or '—' }}</dd>
+      <dt>Address</dt><dd>{{ parent.address or '—' }}</dd>
+    </dl>
+  </div></div>
+
+  <div class="col-12 col-lg-6"><div class="panel-card h-100">
+    <h2>Sign-in account</h2>
+    {% if parent.user %}
+      <dl class="kv mb-3"><dt>Username</dt><dd>{{ parent.user.username }}</dd><dt>Last sign in</dt><dd>{{ parent.user.last_login_at|localtime if parent.user.last_login_at else 'Never' }}</dd></dl>
+      {% if can_edit %}
+      <form method="post" action="{{ url_for('parents.reset_password', parent_id=parent.id) }}" class="m-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-secondary" data-confirm="A new temporary password will be created. The old one stops working." data-title="Reset password?" data-ok-label="Reset" data-ok-class="btn-em">Reset password</button>
+      </form>
+      {% endif %}
+    {% else %}
+      <p class="text-muted">No login yet. With a login, the parent can see their children's attendance, fees and results as those modules arrive.</p>
+      {% if can_edit %}
+      <form method="post" action="{{ url_for('parents.create_login', parent_id=parent.id) }}" class="m-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-em">Create login</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div></div>
+
+  <div class="col-12"><div class="panel-card">
+    <h2>Children</h2>
+    {% for l in children %}
+      <div class="doc-row">
+        <div class="name"><a href="{{ url_for('students.detail', student_id=l.student.id) }}"><strong>{{ l.student.full_name }}</strong></a>
+          <div class="small text-muted">{{ l.student.student_code }} · {{ l.student.class_name }} · {{ l.student.branch.name }} · {{ l.relation }}</div></div>
+        {% if can_edit %}
+        <form method="post" action="{{ url_for('parents.unlink', parent_id=parent.id, student_id=l.student.id) }}" class="m-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-danger" data-confirm="{{ l.student.full_name }} will no longer be linked to {{ parent.full_name }}." data-title="Unlink child?" data-ok-label="Unlink" aria-label="Unlink {{ l.student.full_name }}"><i class="bi bi-x-lg"></i></button>
+        </form>
+        {% endif %}
+      </div>
+    {% else %}<p class="text-muted mb-0">No children linked.</p>{% endfor %}
+
+    {% if can_edit %}
+    <form method="post" action="{{ url_for('parents.link', parent_id=parent.id) }}" class="row g-2 mt-3 pt-3 border-top">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-12 col-md-4"><input class="form-control" name="student_code" placeholder="Student ID, e.g. STU000012" aria-label="Student ID" autocapitalize="characters" required></div>
+      <div class="col-6 col-md-4"><select class="form-select" name="relation" aria-label="Relation">{% for r in relations %}<option>{{ r }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-4"><button class="btn btn-outline-secondary w-100">Link another child</button></div>
+    </form>
+    {% endif %}
+  </div></div>
+</div>
+{% endblock %}

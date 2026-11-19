@@ -1,0 +1,38 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Branch location{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Location · {{ branch.name }}</h1></div><a class="btn btn-outline-secondary" href="{{ url_for('attendance.qr_page', branch=branch.id) }}"><i class="bi bi-qr-code"></i> QR code</a></div>
+<div class="panel-card mb-3">
+  {% if geo %}<p class="mb-1"><strong>Saved:</strong> {{ '%.5f'|format(geo.latitude) }}, {{ '%.5f'|format(geo.longitude) }} · radius {{ geo.radius_m }} m ·
+    <a href="https://www.openstreetmap.org/?mlat={{ geo.latitude }}&mlon={{ geo.longitude }}#map=18/{{ geo.latitude }}/{{ geo.longitude }}" target="_blank" rel="noopener">view on map</a></p>
+  {% else %}<div class="alert alert-warning mb-0">Not set yet. Teachers and students cannot check in until you set it.</div>{% endif %}
+</div>
+<form method="post" class="panel-card" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2>{{ 'Update' if geo else 'Set' }} location</h2>
+  <p class="text-muted">Stand inside the tuition (middle of the building), tap the button, then save. Use a phone with GPS on.</p>
+  <button type="button" class="btn btn-outline-secondary mb-3" id="useHere"><i class="bi bi-crosshair"></i> Use my current location</button>
+  <div class="row g-3">
+    <div class="col-6"><label class="form-label" for="lat">Latitude</label><input class="form-control" id="lat" name="lat" value="{{ geo.latitude if geo else '' }}" inputmode="decimal" required></div>
+    <div class="col-6"><label class="form-label" for="lng">Longitude</label><input class="form-control" id="lng" name="lng" value="{{ geo.longitude if geo else '' }}" inputmode="decimal" required></div>
+    <div class="col-12 col-md-6"><label class="form-label" for="radius">Allowed distance (metres)</label><input class="form-control" id="radius" name="radius" type="number" min="30" max="1000" value="{{ geo.radius_m if geo else default_radius }}">
+      <div class="form-text">Check-ins farther than this from the saved point are refused. 100 m suits a normal building.</div></div>
+  </div>
+  <div id="geoMsg" class="small text-muted mt-2"></div>
+  <button class="btn btn-em mt-3">Save location</button>
+</form>
+{% endblock %}
+{% block page_scripts %}
+<script>
+  document.getElementById("useHere").addEventListener("click", function () {
+    var msg = document.getElementById("geoMsg");
+    if (!window.isSecureContext || !navigator.geolocation) { msg.textContent = "Location needs a secure (https) connection and a browser that supports it."; return; }
+    msg.textContent = "Getting location…";
+    navigator.geolocation.getCurrentPosition(function (p) {
+      document.getElementById("lat").value = p.coords.latitude.toFixed(6);
+      document.getElementById("lng").value = p.coords.longitude.toFixed(6);
+      msg.textContent = "Got it (accuracy about " + Math.round(p.coords.accuracy) + " m). Now press Save.";
+    }, function () { msg.textContent = "Could not get location. Allow location access and try again."; }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  });
+</script>
+{% endblock %}

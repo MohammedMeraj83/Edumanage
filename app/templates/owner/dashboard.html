@@ -1,0 +1,52 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Owner dashboard{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2"><div class="panel-card h-100"><div class="stat-value">{{ stats.branches }}</div><div class="stat-label">Active branches{% if stats.branches_total != stats.branches %} (of {{ stats.branches_total }}){% endif %}</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="panel-card h-100"><div class="stat-value">{{ stats.students }}</div><div class="stat-label">Students</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="panel-card h-100"><div class="stat-value">{{ stats.teachers }}</div><div class="stat-label">Teachers</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="panel-card h-100"><div class="stat-value">{{ stats.staff }}</div><div class="stat-label">Staff</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="panel-card h-100"><div class="stat-value">{{ stats.batches }}</div><div class="stat-label">Active batches</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="panel-card h-100"><div class="stat-value fs-3">{{ session.name if session else '—' }}</div><div class="stat-label">Current session</div></div></div>
+</div>
+
+<div class="page-head">
+  <h2 class="h5 fw-bold m-0">Branches</h2>
+  <a class="btn btn-em btn-sm" href="{{ url_for('branches.new_branch') }}"><i class="bi bi-plus-lg"></i> Add branch</a>
+</div>
+<div class="row g-3 mb-4">
+  {% for b in branches %}
+  <div class="col-12 col-md-6 col-xl-4">
+    <a class="panel-card branch-card" href="{{ url_for('branches.detail', branch_id=b.id) }}">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <div class="fw-bold">{{ b.name }}</div>
+          <div class="text-muted small">{{ b.code }}{% if b.city %} · {{ b.city }}{% endif %}</div>
+        </div>
+        <div>{% if b.is_main %}<span class="badge text-bg-secondary me-1">Main</span>{% endif %}{{ m.status_badge(b.is_active) }}</div>
+      </div>
+      <div class="d-flex gap-4 mt-3 small text-muted">
+        <span><strong class="text-body">{{ admins.get(b.id, 0) }}</strong> admin{{ '' if admins.get(b.id, 0) == 1 else 's' }}</span>
+        <span><strong class="text-body">{{ users.get(b.id, 0) }}</strong> active users</span>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="panel-card">
+  <h2>Recent activity</h2>
+  {% if activity %}
+  <ul class="activity">
+    {% for a in activity %}
+    <li>
+      <div><strong>{{ a.user.full_name if a.user else 'System' }}</strong> · {{ a.action|replace('_', ' ') }}{% if a.entity %} · {{ a.entity|replace('_', ' ') }}{% endif %}</div>
+      {% if a.details %}<div class="small text-muted text-break">{{ a.details }}</div>{% endif %}
+      <div class="small text-muted">{{ a.created_at|localtime }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="text-muted mb-0">Nothing yet. Actions like adding branches and users will show here.</p>{% endif %}
+</div>
+{% endblock %}

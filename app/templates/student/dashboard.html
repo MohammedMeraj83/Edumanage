@@ -1,0 +1,31 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}My dashboard{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Welcome, {{ current_user.full_name }}</h1></div>
+{% if not me %}<div class="panel-card"><p class="text-muted mb-0">Your student profile is not linked yet. Ask your branch admin.</p></div>{% else %}
+<div class="row g-3">
+  <div class="col-12 col-lg-7"><div class="panel-card h-100"><h2>Today's classes ({{ today_name }})</h2>
+    {% for r in today_rows %}{% set s = r.s %}
+    <div class="doc-row"><div class="name"><strong>{{ s.start_at|localtime('%I:%M %p') }} – {{ s.end_at|localtime('%I:%M %p') }}</strong> · {{ s.batch.subject.name }}
+      <div class="small text-muted">{{ s.batch.name }} · {{ s.teacher.full_name }}{% if s.room %} · {{ s.room.name }}{% endif %}</div>
+      {% if r.rec and r.rec.verified %}<div class="small text-success"><i class="bi bi-geo-alt-fill"></i> You checked in</div>{% endif %}</div>
+      {% if r.rec and r.rec.status in ['present','late','absent','leave'] and s.attendance_submitted_at %}<span class="badge text-bg-{{ {'present':'success','late':'warning','absent':'danger','leave':'secondary'}.get(r.rec.status) }}">{{ r.rec.status|capitalize }}</span>
+      {% elif r.open and not (r.rec and r.rec.verified) %}
+      <form method="post" action="{{ url_for('attendance.self_checkin', session_id=s.id) }}" class="geo-form m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">
+        <button class="btn btn-em btn-sm">I am here</button><div class="geo-status alert alert-warning mt-2 mb-0 d-none small"></div></form>
+      {% else %}<span class="badge text-bg-{{ r.css }}">{{ r.label }}</span>{% endif %}
+    </div>
+    {% else %}<p class="text-muted mb-0">No classes today.</p>{% endfor %}
+    <a class="btn btn-sm btn-outline-secondary mt-3" href="{{ url_for('student.attendance') }}">See my attendance</a>
+    <a class="btn btn-sm btn-outline-secondary mt-3" href="{{ url_for('student.results') }}">My results</a>
+    <a class="btn btn-sm btn-outline-secondary mt-3" href="{{ url_for('student.homework') }}">Homework</a>
+    <a class="btn btn-sm btn-outline-secondary mt-3" href="{{ url_for('student.documents') }}">Documents</a>
+  </div></div>
+  <div class="col-12 col-lg-5"><div class="panel-card h-100"><h2>Profile</h2>
+    <dl class="kv"><dt>Student ID</dt><dd>{{ me.student_code }}</dd><dt>Class</dt><dd>{{ me.class_name }}</dd><dt>Branch</dt><dd>{{ me.branch.name }}</dd><dt>Admission no.</dt><dd>{{ me.admission_no }}</dd></dl></div></div>
+  <div class="col-12"><div class="panel-card"><h2>My batches</h2>
+    {% for b in batches %}<div class="doc-row"><div class="name"><strong>{{ b.name }}</strong><div class="small text-muted">{{ b.teacher.full_name }} · {{ schedule_text(b) }}</div></div></div>
+    {% else %}<p class="text-muted mb-0">You are not in any batch yet.</p>{% endfor %}</div></div>
+</div>
+{% endif %}
+{% endblock %}

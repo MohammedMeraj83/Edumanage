@@ -1,0 +1,30 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Homework{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Homework</h1>
+  {% if can_post and current_user.has_permission('homework.create') %}<a class="btn btn-em" href="{{ url_for('homework.new') }}"><i class="bi bi-plus-lg"></i> Give homework</a>{% endif %}</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-5"><select class="form-select" name="batch" aria-label="Batch"><option value="">All batches</option>{% for b in batches %}<option value="{{ b.id }}" {{ 'selected' if batch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-3"><select class="form-select" name="when" aria-label="When"><option value="">All</option><option value="upcoming" {{ 'selected' if when == 'upcoming' }}>Not yet due</option><option value="past" {{ 'selected' if when == 'past' }}>Past due date</option></select></div>
+  <div class="col-6 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Homework</th><th>Batch</th><th>Last date</th><th>Checked</th><th></th></tr></thead>
+  <tbody>
+  {% for h in page.items %}{% set pr = progress[h.id] %}{% set lbl = due_label(h.due_date) %}
+    <tr>
+      <td class="person-td" data-label="Homework"><strong>{{ h.title }}</strong>{% if h.attachment %} <i class="bi bi-paperclip" title="Has a file"></i>{% endif %}
+        <div class="small text-muted">Given {{ h.assigned_on.strftime('%d %b') }}</div></td>
+      <td data-label="Batch" class="small">{{ h.batch.name }}</td>
+      <td data-label="Last date">{{ h.due_date.strftime('%d %b %Y') }}<div><span class="badge text-bg-{{ lbl[1] }}">{{ lbl[0] }}</span></div></td>
+      <td data-label="Checked">{{ pr.checked }} / {{ pr.total }}{% if pr.checked %} <span class="small text-muted">({{ pr.done }} done)</span>{% endif %}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('homework.detail', hw_id=h.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'homework.index', args) }}
+{% else %}{{ m.empty_state("No homework found", "Give homework to a batch and tick who completed it.", url_for('homework.new') if can_post and current_user.has_permission('homework.create') else None, "Give homework") }}{% endif %}
+{% endblock %}

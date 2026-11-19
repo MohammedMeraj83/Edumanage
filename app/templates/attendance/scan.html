@@ -1,0 +1,20 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Scan{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ geo.branch.name }}</h1><div class="text-muted small">Today's lectures</div></div></div>
+{% for s, key, label, css in items %}
+<div class="panel-card mb-2">
+  <div class="d-flex justify-content-between gap-2"><div><div class="fw-bold">{{ s.start_at|localtime('%I:%M %p') }} – {{ s.end_at|localtime('%I:%M %p') }}</div><div>{{ s.batch.name }}</div></div><span class="badge text-bg-{{ css }} align-self-start">{{ label }}</span></div>
+  {% if current_user.role_name == 'teacher' %}
+    {% if now_open(s) %}
+    <form method="post" action="{{ url_for('attendance.checkin', session_id=s.id) }}" class="geo-form mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">
+      <button class="btn btn-em w-100 py-2">Start class</button><div class="geo-status alert alert-warning mt-2 mb-0 d-none"></div></form>
+    {% else %}<a class="btn btn-outline-secondary btn-sm mt-2" href="{{ url_for('attendance.session_view', session_id=s.id) }}">Open</a>{% endif %}
+  {% elif current_user.role_name == 'student' and student_open(s) %}
+    <form method="post" action="{{ url_for('attendance.self_checkin', session_id=s.id) }}" class="geo-form mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">
+      <button class="btn btn-em w-100 py-2">I am here</button><div class="geo-status alert alert-warning mt-2 mb-0 d-none"></div></form>
+  {% endif %}
+</div>
+{% else %}{{ m.empty_state("No lectures for you here today", "Make sure you scanned the QR of your own branch.", None, None) }}{% endfor %}
+{% endblock %}

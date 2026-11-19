@@ -1,0 +1,35 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Notices{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Notices</h1>
+  <a class="btn btn-outline-secondary" href="{{ url_for('notifications.inbox') }}"><i class="bi bi-bell"></i> My notifications{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}</a>
+  {% if current_user.has_permission('notices.create') %}<a class="btn btn-em" href="{{ url_for('notices.new') }}"><i class="bi bi-plus-lg"></i> Publish notice</a>{% endif %}
+</div>
+{% if page.items %}
+<div class="table-responsive">
+  <table class="table table-cards align-middle">
+    <thead><tr><th>Title</th><th>Audience</th><th>Branch</th><th>Published</th><th></th></tr></thead>
+    <tbody>{% for notice in page.items %}
+      <tr>
+        <td data-label="Title"><strong>{{ notice.title }}</strong><div class="small text-muted text-truncate" style="max-width:28rem">{{ notice.body }}</div></td>
+        <td data-label="Audience">{{ notice.audience|capitalize }}</td>
+        <td data-label="Branch">{{ notice.branch.name if notice.branch else 'All branches' }}</td>
+        <td data-label="Published">{{ notice.created_at|localtime('%d %b %Y') }}</td>
+        <td class="actions text-end">
+          {% if current_user.has_permission('notices.edit') %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('notices.edit', notice_id=notice.id) }}">Edit</a>{% endif %}
+          {% if current_user.has_permission('notices.delete') %}
+          <form method="post" action="{{ url_for('notices.delete', notice_id=notice.id) }}" class="d-inline" onsubmit="return confirm('Withdraw this notice? It will disappear from recipients’ inboxes.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Withdraw</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}</tbody>
+  </table>
+</div>
+{% else %}
+{{ m.empty_state("No notices yet", "Publish a notice to send it to the selected audience in the app.", url_for('notices.new') if current_user.has_permission('notices.create') else None, "Publish notice") }}
+{% endif %}
+{% endblock %}

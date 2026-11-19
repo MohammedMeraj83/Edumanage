@@ -1,0 +1,89 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ exam.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ exam.name }}</h1>
+    <div class="text-muted small mt-1">{{ exam.branch.name }} · {{ exam.session.name }} · {{ exam.type_label }} · {{ exam.start_date.strftime('%d %b') }}{% if exam.end_date != exam.start_date %} – {{ exam.end_date.strftime('%d %b %Y') }}{% else %} {{ exam.start_date.strftime('%Y') }}{% endif %}
+      · {% if exam.results_published %}<span class="badge text-bg-success">Published</span>{% else %}<span class="badge text-bg-secondary">Not published</span>{% endif %}</div>
+    {% if exam.note %}<div class="small mt-1">{{ exam.note }}</div>{% endif %}</div>
+  {% if can_publish %}
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('exams.results', exam_id=exam.id) }}"><i class="bi bi-trophy"></i> Results</a>
+    {% if can_manage and not exam.results_published %}<a class="btn btn-outline-secondary" href="{{ url_for('exams.edit', exam_id=exam.id) }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+    {% if exam.results_published %}
+    <form method="post" action="{{ url_for('exams.unpublish', exam_id=exam.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger w-100" data-confirm="Students and parents will no longer see these results until you publish again." data-title="Hide results?" data-ok-label="Unpublish">Unpublish</button></form>
+    {% else %}
+    <form method="post" action="{{ url_for('exams.publish', exam_id=exam.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-em w-100" data-confirm="Students and parents will be able to see their marks and marksheet. All papers must be submitted first." data-title="Publish results?" data-ok-label="Publish">Publish results</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="panel-card mb-3">
+  <h2>Papers</h2>
+  {% for p in papers %}{% set pr = progress[p.id] %}
+  <div class="doc-row">
+    <div class="name"><strong>{{ p.batch.subject.name }}</strong> <span class="text-muted small">· {{ p.batch.name }}</span>
+      <div class="small text-muted">{{ p.exam_date.strftime('%a, %d %b') }}{% if p.start_time %} · {{ p.start_time.strftime('%I:%M %p').lstrip('0') }}{% endif %}{% if p.duration_min %} · {{ p.duration_min }} min{% endif %}
+        · Max {{ fmt(p.max_marks) }}, pass {{ fmt(p.pass_marks) }} · {{ p.batch.teacher.full_name }}</div>
+      <div class="small">
+        <span class="badge text-bg-{{ 'success' if pr.entered >= pr.total and pr.total else 'warning' if pr.entered else 'secondary' }}">{{ pr.entered }} / {{ pr.total }} entered</span>
+        {% if pr.absent %}<span class="badge text-bg-light border">{{ pr.absent }} absent</span>{% endif %}
+        {% if p.locked %}<span class="badge text-bg-dark"><i class="bi bi-lock-fill"></i> Submitted</span>{% endif %}
+      </div></div>
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      <a class="btn btn-sm {{ 'btn-outline-secondary' if p.locked or exam.results_published else 'btn-em' }}" href="{{ url_for('exams.marks', paper_id=p.id) }}">{{ 'View marks' if p.locked or exam.results_published else 'Enter marks' }}</a>
+      {% if can_publish and p.locked and not exam.results_published %}
+      <form method="post" action="{{ url_for('exams.unlock', paper_id=p.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-secondary" data-confirm="The teacher will be able to change marks again." data-title="Unlock this paper?" data-ok-label="Unlock">Unlock</button></form>
+      {% endif %}
+      {% if can_manage and not exam.results_published and not p.locked %}
+      <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#edit{{ p.id }}">Edit</button>
+      {% endif %}
+    </div>
+  </div>
+  {% if can_manage and not exam.results_published and not p.locked %}
+  <div class="collapse" id="edit{{ p.id }}">
+    <form method="post" action="{{ url_for('exams.paper_edit', paper_id=p.id) }}" class="row g-2 py-2 border-bottom">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-6 col-md-3"><label class="form-label small" for="d{{ p.id }}">Date</label><input class="form-control" type="date" id="d{{ p.id }}" name="exam_date" value="{{ p.exam_date.isoformat() }}" min="{{ exam.start_date.isoformat() }}" max="{{ exam.end_date.isoformat() }}" required></div>
+      <div class="col-6 col-md-2"><label class="form-label small" for="t{{ p.id }}">Start</label><input class="form-control" type="time" id="t{{ p.id }}" name="start_time" value="{{ p.start_time.strftime('%H:%M') if p.start_time else '' }}"></div>
+      <div class="col-4 col-md-2"><label class="form-label small" for="du{{ p.id }}">Minutes</label><input class="form-control" type="number" min="1" max="600" id="du{{ p.id }}" name="duration" value="{{ p.duration_min or '' }}"></div>
+      <div class="col-4 col-md-2"><label class="form-label small" for="mx{{ p.id }}">Max marks</label><input class="form-control" type="number" step="0.01" min="1" id="mx{{ p.id }}" name="max_marks" value="{{ fmt(p.max_marks) }}" required></div>
+      <div class="col-4 col-md-2"><label class="form-label small" for="pm{{ p.id }}">Pass marks</label><input class="form-control" type="number" step="0.01" min="0" id="pm{{ p.id }}" name="pass_marks" value="{{ fmt(p.pass_marks) }}" required></div>
+      <div class="col-12 d-flex gap-2"><button class="btn btn-sm btn-em">Save paper</button>
+        {% if not progress[p.id].entered %}<button class="btn btn-sm btn-outline-danger" formaction="{{ url_for('exams.paper_delete', paper_id=p.id) }}" data-confirm="This paper will be removed from the exam." data-title="Remove paper?" data-ok-label="Remove">Remove</button>{% endif %}</div>
+    </form>
+  </div>
+  {% endif %}
+  {% else %}<p class="text-muted mb-0">{{ 'No papers of yours in this exam.' if current_user.role_name == 'teacher' else 'No papers yet. Add one below.' }}</p>{% endfor %}
+</div>
+
+{% if can_manage and not exam.results_published %}
+<form method="post" action="{{ url_for('exams.add_papers', exam_id=exam.id) }}" class="panel-card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2>Add papers</h2>
+  {% if free_batches %}
+  <div class="form-text mb-2">Tick the batches that sit this exam. They all get the same date and marks; you can change any paper afterwards.</div>
+  <div class="row g-2 mb-3">
+    {% for b in free_batches %}<div class="col-12 col-md-6 col-xl-4"><div class="form-check"><input class="form-check-input" type="checkbox" name="batch_id" value="{{ b.id }}" id="b{{ b.id }}"><label class="form-check-label" for="b{{ b.id }}">{{ b.name }}</label></div></div>{% endfor %}
+  </div>
+  <div class="row g-3">
+    <div class="col-6 col-md-3"><label class="form-label" for="exam_date">Date</label><input class="form-control" type="date" id="exam_date" name="exam_date" value="{{ exam.start_date.isoformat() }}" min="{{ exam.start_date.isoformat() }}" max="{{ exam.end_date.isoformat() }}" required></div>
+    <div class="col-6 col-md-2"><label class="form-label" for="start_time">Start (optional)</label><input class="form-control" type="time" id="start_time" name="start_time"></div>
+    <div class="col-4 col-md-2"><label class="form-label" for="duration">Minutes</label><input class="form-control" type="number" min="1" max="600" id="duration" name="duration"></div>
+    <div class="col-4 col-md-2"><label class="form-label" for="max_marks">Max marks</label><input class="form-control" type="number" step="0.01" min="1" id="max_marks" name="max_marks" value="100" required></div>
+    <div class="col-4 col-md-2"><label class="form-label" for="pass_marks">Pass marks</label><input class="form-control" type="number" step="0.01" min="0" id="pass_marks" name="pass_marks" value="35" required></div>
+  </div>
+  <button class="btn btn-em mt-3">Add papers</button>
+  {% else %}<p class="text-muted mb-0">Every active batch of this branch already has a paper (or there are no active batches yet).</p>{% endif %}
+</form>
+{% if not exam.papers %}
+<form method="post" action="{{ url_for('exams.delete', exam_id=exam.id) }}" class="mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if current_user.has_permission('exams.delete') %}<button class="btn btn-sm btn-outline-danger" data-confirm="This exam has no papers and will be deleted." data-title="Delete exam?" data-ok-label="Delete">Delete exam</button>{% endif %}</form>
+{% endif %}
+{% endif %}
+{% endblock %}

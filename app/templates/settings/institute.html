@@ -1,0 +1,27 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Institute profile{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Institute profile</h1></div>
+<form method="post" enctype="multipart/form-data" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    {{ m.field(form.name, "col-12 col-md-6") }}
+    {{ m.field(form.tagline, "col-12 col-md-6") }}
+    {{ m.field(form.registration_no, "col-12 col-md-6") }}
+    {{ m.field(form.phone, "col-12 col-md-6", type="tel", inputmode="tel") }}
+    {{ m.field(form.email, "col-12 col-md-6", type="email") }}
+    {{ m.field(form.website, "col-12 col-md-6", placeholder="https://") }}
+    {{ m.field(form.address, "col-12", rows=2) }}
+    <div class="col-12">
+      <label class="form-label" for="{{ form.logo.id }}">Logo</label>
+      {% if inst.logo %}<div class="mb-2"><img class="logo-preview" src="{{ url_for('media', folder='institute', filename=inst.logo) }}" alt="Current logo"></div>{% endif %}
+      {{ form.logo(class="form-control" ~ (" is-invalid" if form.logo.errors else ""), accept="image/png,image/jpeg,image/webp") }}
+      {% for e in form.logo.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+      <div class="form-text">PNG, JPG or WEBP, up to 2 MB. It is resized automatically.</div>
+    </div>
+    {% if inst.logo %}{{ m.check(form.remove_logo) }}{% endif %}
+  </div>
+  <div class="mt-4 stack-sm d-flex"><button class="btn btn-em">Save profile</button></div>
+</form>
+{% endblock %}

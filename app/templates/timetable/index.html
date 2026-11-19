@@ -1,0 +1,30 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Timetable{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Timetable</h1><div class="text-muted small">{{ total }} lecture{{ '' if total == 1 else 's' }} a week</div></div>
+
+<form class="row g-2 mb-3" method="get">
+  {% if branches %}<div class="col-6 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if sel.branch == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  {% if not is_teacher %}<div class="col-6 col-md-3"><select class="form-select" name="teacher" aria-label="Teacher"><option value="">All teachers</option>{% for t in teachers %}<option value="{{ t.id }}" {{ 'selected' if sel.teacher == t.id }}>{{ t.full_name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="room" aria-label="Room"><option value="">All rooms</option>{% for r in rooms %}<option value="{{ r.id }}" {{ 'selected' if sel.room == r.id }}>{{ r.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-6 col-md-2"><select class="form-select" name="day" aria-label="Day"><option value="">Every day</option>{% for d in weekdays %}<option value="{{ loop.index0 }}" {{ 'selected' if sel.day == loop.index0 }}>{{ d }}</option>{% endfor %}</select></div>
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% for d in range(7) %}{% if by_day[d] %}
+<div class="panel-card mb-3">
+  <h2>{{ weekdays[d] }}{% if d == today %} <span class="badge text-bg-success ms-1">Today</span>{% endif %}</h2>
+  {% for s in by_day[d] %}
+  <div class="doc-row">
+    <div class="name">
+      <strong>{{ s.start_time.strftime('%I:%M %p').lstrip('0') }} – {{ s.end_time.strftime('%I:%M %p').lstrip('0') }}</strong>
+      · <a href="{{ url_for('batches.detail', batch_id=s.batch_id) }}">{{ s.batch.name }}</a>
+      <div class="small text-muted">{{ s.effective_teacher.full_name }}{% if s.effective_room %} · {{ s.effective_room.name }}{% endif %} · {{ counts[s.batch_id].total }} students ({{ counts[s.batch_id].male }} M / {{ counts[s.batch_id].female }} F) · {{ s.batch.branch.name }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}{% endfor %}
+{% if total == 0 %}{{ m.empty_state("No lectures found", "Lectures appear here after you add timetable slots to a batch.", None, None) }}{% endif %}
+{% endblock %}

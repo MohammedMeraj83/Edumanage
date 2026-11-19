@@ -1,0 +1,82 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% set bpn = request.blueprint %}
+{% block page_title %}{{ obj.full_name }}{% endblock %}
+{% block content %}
+{% set can_edit = current_user.has_permission(cfg.perm ~ '.edit') %}
+<div class="page-head">
+  <div class="d-flex align-items-center gap-3">
+    {{ m.avatar(url_for(bpn ~ '.photo', obj_id=obj.id) if obj.photo else None, obj.full_name, 64) }}
+    <div>
+      <h1>{{ obj.full_name }}</h1>
+      <div class="text-muted small mt-1">{{ obj.employee_code }} · {{ obj.title_text }} · {{ obj.branch.name }} · {{ m.status_pill(obj.status) }}</div>
+    </div>
+  </div>
+  {% if can_edit %}
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for(bpn ~ '.edit', obj_id=obj.id) }}"><i class="bi bi-pencil"></i> Edit</a>
+    {% if current_user.has_permission('id_cards.view') %}<a class="btn btn-outline-secondary" href="{{ url_for('id_cards.index', kind=('teacher' if bpn == 'teachers' else 'staff'), q=obj.employee_code) }}"><i class="bi bi-person-badge"></i> ID card</a>{% endif %}
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">Status</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        {% for st, label in [('active','Mark active'),('inactive','Mark inactive'),('left','Mark as left')] if st != obj.status %}
+        <li>
+          <form method="post" action="{{ url_for(bpn ~ '.change_status', obj_id=obj.id) }}" class="m-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="status" value="{{ st }}">
+            <button class="dropdown-item py-2" {% if st != 'active' %}data-confirm="{{ obj.full_name }} will not be able to sign in while {{ st }}. Records are kept." data-title="{{ label }}?" data-ok-label="{{ label }}"{% endif %}>{{ label }}</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6"><div class="panel-card h-100">
+    <h2>Details</h2>
+    <dl class="kv">
+      <dt>ID</dt><dd><strong>{{ obj.employee_code }}</strong></dd>
+      {% for label, value in obj.extra_rows() %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+      <dt>Joined</dt><dd>{{ obj.joining_date.strftime('%d %b %Y') }}</dd>
+      <dt>Qualification</dt><dd>{{ obj.qualification or '—' }}</dd>
+      <dt>Gender</dt><dd>{{ obj.gender }}</dd>
+      <dt>Date of birth</dt><dd>{{ obj.dob.strftime('%d %b %Y') if obj.dob else '—' }}</dd>
+      <dt>Phone</dt><dd><a href="tel:{{ obj.phone }}">{{ obj.phone }}</a></dd>
+      <dt>Email</dt><dd>{{ obj.email or '—' }}</dd>
+      <dt>Address</dt><dd>{{ obj.address or '—' }}</dd>
+      {% if obj.notes %}<dt>Notes</dt><dd>{{ obj.notes }}</dd>{% endif %}
+    </dl>
+  </div></div>
+
+  <div class="col-12 col-lg-6"><div class="panel-card h-100">
+    <h2>Sign-in account</h2>
+    {% if obj.user %}
+      <dl class="kv mb-3">
+        <dt>Username</dt><dd>{{ obj.user.username }}</dd>
+        <dt>Role</dt><dd>{{ obj.user.role.display_name }}</dd>
+        <dt>Last sign in</dt><dd>{{ obj.user.last_login_at|localtime if obj.user.last_login_at else 'Never' }}</dd>
+      </dl>
+      {% if can_edit %}
+      <form method="post" action="{{ url_for(bpn ~ '.reset_password', obj_id=obj.id) }}" class="m-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-secondary" data-confirm="A new temporary password will be created. The old one stops working." data-title="Reset password?" data-ok-label="Reset" data-ok-class="btn-em">Reset password</button>
+      </form>
+      {% endif %}
+    {% elif login_ok %}
+      <p class="text-muted">No login yet.</p>
+      {% if can_edit %}
+      <form method="post" action="{{ url_for(bpn ~ '.create_login', obj_id=obj.id) }}" class="m-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-em">Create login</button>
+      </form>
+      {% endif %}
+    {% else %}
+      <p class="text-muted mb-0">Only teachers and accountants have a sign-in account. Change the designation to Accountant to give one.</p>
+    {% endif %}
+  </div></div>
+
+  <div class="col-12">{% with can_edit=can_edit, bpn=bpn %}{% include "employees/_documents.html" %}{% endwith %}</div>
+</div>
+{% endblock %}

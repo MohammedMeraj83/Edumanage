@@ -1,0 +1,79 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}ID cards{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>ID cards</h1><div class="text-muted small mt-1">Issue a card, then print it. Cards stay valid until the end of the current session.</div></div></div>
+
+<ul class="nav nav-pills mb-3">
+  {% for k, cfg in kinds.items() %}<li class="nav-item"><a class="nav-link {{ 'active' if kind == k }}" href="{{ url_for('id_cards.index', kind=k) }}">{{ cfg.label }}s</a></li>{% endfor %}
+</ul>
+
+<form class="row g-2 mb-3" method="get">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <div class="col-12 col-md-4"><input class="form-control" name="q" value="{{ q }}" placeholder="Search name or ID" aria-label="Search"></div>
+  {% if kind == 'student' %}<div class="col-6 col-md-2"><select class="form-select" name="class" aria-label="Class"><option value="">All classes</option>{% for c in classes %}<option value="{{ c }}" {{ 'selected' if class_name == c }}>{{ c }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-6 col-md-2"><select class="form-select" name="status" aria-label="Status"><option value="active" {{ 'selected' if status == 'active' }}>Active</option><option value="inactive" {{ 'selected' if status == 'inactive' }}>Inactive</option><option value="left" {{ 'selected' if status == 'left' }}>Left</option></select></div>
+  {% if branches %}<div class="col-6 col-md-3"><select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if page.items %}
+<form id="bulkform" method="post" action="{{ url_for('id_cards.bulk') }}" target="_blank">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="kind" value="{{ kind }}">
+</form>
+{% if current_user.has_permission('id_cards.create') %}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+  <button class="btn btn-em" form="bulkform"><i class="bi bi-printer"></i> Print selected (A4 sheets)</button>
+  <span class="small text-muted">Anyone ticked who has no card gets one automatically. 10 cards a page; print double sided to get the backs.</span>
+</div>
+{% endif %}
+<table class="table table-cards align-middle">
+  <thead><tr><th style="width:2rem"><input type="checkbox" class="form-check-input" id="all" aria-label="Select all" form="bulkform"></th><th>Name</th><th>{{ 'Class' if kind == 'student' else 'Role' }}</th><th>Card</th><th></th></tr></thead>
+  <tbody>
+  {% for p in page.items %}{% set card = cards.get(p.id) %}
+    <tr>
+      <td data-label=""><input type="checkbox" class="form-check-input pick" name="ids" value="{{ p.id }}" form="bulkform" aria-label="Select {{ p.full_name }}"></td>
+      <td class="person-td" data-label="Name"><strong>{{ p.full_name }}</strong><div class="small text-muted">{{ code_of(p) }} · {{ p.branch.name }}</div></td>
+      <td data-label="{{ 'Class' if kind == 'student' else 'Role' }}">{{ line_of(p) }}</td>
+      <td data-label="Card">
+        {% if card %}{% if valid(card) %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-warning">Expired</span>{% endif %}
+          <div class="small text-muted">{{ card.card_no }} · till {{ card.valid_until.strftime('%d %b %Y') }}</div>
+        {% else %}<span class="badge text-bg-secondary">Not issued</span>{% endif %}</td>
+      <td class="actions text-end">
+        {% if card %}
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('id_cards.card_pdf', card_id=card.id) }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Print</a>
+          {% if current_user.has_permission('id_cards.create') %}
+          <div class="dropdown d-inline">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><form method="post" action="{{ url_for('id_cards.issue', kind=kind, person_id=p.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="replace" value="1"><input type="hidden" name="old_status" value="replaced">
+                <button class="dropdown-item py-2" data-confirm="The old card stops verifying and a new one is issued." data-title="Issue a replacement?" data-ok-label="Replace">Replace (damaged / new photo)</button></form></li>
+              <li><form method="post" action="{{ url_for('id_cards.issue', kind=kind, person_id=p.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="replace" value="1"><input type="hidden" name="old_status" value="lost">
+                <button class="dropdown-item py-2" data-confirm="The lost card stops verifying and a new one is issued." data-title="Card was lost?" data-ok-label="Issue new card">Replace (lost)</button></form></li>
+              {% if current_user.has_permission('id_cards.edit') %}
+              <li><form method="post" action="{{ url_for('id_cards.close', card_id=card.id) }}" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="status" value="cancelled">
+                <button class="dropdown-item py-2 text-danger" data-confirm="The card stops verifying. No new card is issued." data-title="Cancel this card?" data-ok-label="Cancel card">Cancel card</button></form></li>
+              {% endif %}
+            </ul>
+          </div>
+          {% endif %}
+        {% elif current_user.has_permission('id_cards.create') and p.status == 'active' %}
+          <form method="post" action="{{ url_for('id_cards.issue', kind=kind, person_id=p.id) }}" class="d-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-em">Issue card</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'id_cards.index', args) }}
+<script>
+  (function () {
+    var all = document.getElementById('all');
+    if (!all) return;
+    all.addEventListener('change', function () {
+      document.querySelectorAll('.pick').forEach(function (c) { c.checked = all.checked; });
+    });
+  })();
+</script>
+{% else %}{{ m.empty_state("No one found", "Try another search or filter.", None, None) }}{% endif %}
+{% endblock %}

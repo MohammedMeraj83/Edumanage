@@ -1,0 +1,111 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ batch.name }}{% endblock %}
+{% block content %}
+{% set weekdays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+<div class="page-head">
+  <div>
+    <h1>{{ batch.name }}</h1>
+    <div class="text-muted small mt-1">{{ batch.branch.name }} · {{ batch.session.name }} · {{ m.status_pill(batch.status) }}</div>
+  </div>
+  {% if can_edit %}
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ url_for('batches.edit', batch_id=batch.id) }}"><i class="bi bi-pencil"></i> Edit</a>
+    <form method="post" action="{{ url_for('batches.change_status', batch_id=batch.id) }}" class="m-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if batch.status == 'active' %}<input type="hidden" name="status" value="closed">
+        <button class="btn btn-outline-danger w-100" data-confirm="A closed batch is hidden from new enrollments and from clash checks. Students and history stay." data-title="Close this batch?" data-ok-label="Close batch">Close batch</button>
+      {% else %}<input type="hidden" name="status" value="active"><button class="btn btn-em w-100">Reopen</button>{% endif %}
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="panel-card h-100"><div class="stat-value">{{ counts.total }}<span class="fs-6 text-muted"> / {{ batch.capacity }}</span></div><div class="stat-label">Students (seats {{ [batch.capacity - seats_used, 0]|max }} left)</div></div></div>
+  <div class="col-3 col-lg-2"><div class="panel-card h-100"><div class="stat-value">{{ counts.male }}</div><div class="stat-label">Male</div></div></div>
+  <div class="col-3 col-lg-2"><div class="panel-card h-100"><div class="stat-value">{{ counts.female }}</div><div class="stat-label">Female</div></div></div>
+  <div class="col-12 col-lg-5"><div class="panel-card h-100">
+    <dl class="kv">
+      <dt>Course</dt><dd>{{ batch.course.name }} · {{ batch.subject.name }}</dd>
+      <dt>Teacher</dt><dd>{{ batch.teacher.full_name }}</dd>
+      <dt>Room</dt><dd>{{ batch.room.name if batch.room else '—' }}</dd>
+      <dt>Fee</dt><dd>₹{{ '{:,.2f}'.format(batch.fee_amount) }} {{ batch.fee_label|lower }}</dd>
+      <dt>Timing</dt><dd>{{ schedule_text }}</dd>
+    </dl>
+  </div></div>
+</div>
+
+<div class="panel-card mb-3">
+  <h2>Weekly timetable</h2>
+  {% for s in batch.slots %}
+    <div class="doc-row">
+      <div class="name"><strong>{{ weekdays[s.weekday] }}</strong> · {{ s.start_time.strftime('%I:%M %p').lstrip('0') }} – {{ s.end_time.strftime('%I:%M %p').lstrip('0') }}
+        <span class="text-muted small">({{ s.minutes }} min)</span>
+        <div class="small text-muted">{{ s.effective_teacher.full_name }}{% if s.effective_room %} · {{ s.effective_room.name }}{% endif %}</div></div>
+      {% if can_edit and current_user.has_permission('timetable.delete') %}
+      <form method="post" class="m-0" action="{{ url_for('batches.delete_slot', batch_id=batch.id, slot_id=s.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-danger" data-confirm="This lecture will be removed from the weekly timetable." data-title="Remove lecture?" data-ok-label="Remove" aria-label="Remove lecture"><i class="bi bi-trash"></i></button>
+      </form>{% endif %}
+    </div>
+  {% else %}<p class="text-muted mb-0">No lectures yet. Add the days and times below.</p>{% endfor %}
+
+  {% if can_edit and batch.status == 'active' and current_user.has_permission('timetable.create') %}
+  <form method="post" action="{{ url_for('batches.add_slot', batch_id=batch.id) }}" class="row g-2 mt-3 pt-3 border-top">
+    {{ slot_form.hidden_tag() }}
+    <div class="col-12 col-md-3">{{ slot_form.weekday(class="form-select", **{'aria-label': 'Day'}) }}</div>
+    <div class="col-6 col-md-2">{{ slot_form.start_time(class="form-control", **{'aria-label': 'Start time'}) }}</div>
+    <div class="col-6 col-md-2">{{ slot_form.end_time(class="form-control", **{'aria-label': 'End time'}) }}</div>
+    <div class="col-6 col-md-2">{{ slot_form.room_id(class="form-select", **{'aria-label': 'Room'}) }}</div>
+    <div class="col-6 col-md-3">{{ slot_form.teacher_id(class="form-select", **{'aria-label': 'Teacher'}) }}</div>
+    <div class="col-12"><button class="btn btn-outline-secondary w-100"><i class="bi bi-plus-lg"></i> Add lecture</button></div>
+    <div class="form-text">The system blocks clashes: same teacher, same room, or an overlapping lecture of this batch.</div>
+  </form>
+  {% endif %}
+</div>
+
+<div class="panel-card mb-3">
+  <h2>Students ({{ counts.total }})</h2>
+  {% for e in enrolled %}
+    <div class="doc-row">
+      <div class="name">
+        <a href="{{ url_for('students.detail', student_id=e.student.id) }}"><strong>{{ e.student.full_name }}</strong></a>
+        <div class="small text-muted">{{ e.student.student_code }} · {{ e.student.class_name }} · {{ e.student.gender }} · ₹{{ '{:,.0f}'.format(e.fee_amount) }}</div>
+      </div>
+      {% if can_edit %}
+      <form method="post" class="m-0" action="{{ url_for('batches.unenroll', batch_id=batch.id, student_id=e.student.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-danger" data-confirm="{{ e.student.full_name }} will be removed from this batch. History is kept." data-title="Remove student?" data-ok-label="Remove" aria-label="Remove {{ e.student.full_name }}"><i class="bi bi-person-dash"></i></button>
+      </form>{% endif %}
+    </div>
+  {% else %}<p class="text-muted mb-0">No students yet.</p>{% endfor %}
+
+  {% if can_edit and batch.status == 'active' %}
+  <form method="get" class="row g-2 mt-3 pt-3 border-top">
+    <div class="col-12 col-md-9"><input class="form-control" type="search" name="find" value="{{ find }}" placeholder="Find a student to add: name, Student ID or phone" aria-label="Find student"></div>
+    <div class="col-12 col-md-3"><button class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Search</button></div>
+  </form>
+  {% if find %}
+    {% for s in found %}
+    <form method="post" action="{{ url_for('batches.enroll', batch_id=batch.id) }}" class="doc-row">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="student_id" value="{{ s.id }}">
+      <div class="name"><strong>{{ s.full_name }}</strong><div class="small text-muted">{{ s.student_code }} · {{ s.class_name }}</div></div>
+      <div class="d-flex gap-2 align-items-center">
+        <input class="form-control" style="width:110px" type="number" step="0.01" min="0" name="fee" placeholder="₹{{ '{:,.0f}'.format(batch.fee_amount) }}" aria-label="Fee for {{ s.full_name }}">
+        <button class="btn btn-em btn-sm">Add</button>
+      </div>
+    </form>
+    {% else %}<p class="text-muted mt-3 mb-0">No matching active student in this branch (or already in this batch).</p>{% endfor %}
+    <div class="form-text">Leave the fee empty to use the batch fee.</div>
+  {% endif %}
+  {% endif %}
+</div>
+
+{% if history %}
+<div class="panel-card">
+  <h2>Left this batch</h2>
+  {% for e in history %}<div class="doc-row"><div class="name">{{ e.student.full_name }} <span class="text-muted small">· left {{ e.left_on.strftime('%d %b %Y') }}{% if e.leave_reason %} · {{ e.leave_reason }}{% endif %}</span></div></div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

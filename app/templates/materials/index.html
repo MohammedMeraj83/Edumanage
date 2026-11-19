@@ -1,0 +1,37 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Study materials{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Study materials</h1>
+  {% if can_post and current_user.has_permission('materials.create') %}<a class="btn btn-em" href="{{ url_for('materials.new', batch=batch_id) }}"><i class="bi bi-plus-lg"></i> Share material</a>{% endif %}</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-4"><select class="form-select" name="batch" aria-label="Batch"><option value="">All batches</option>{% for b in batches %}<option value="{{ b.id }}" {{ 'selected' if batch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><select class="form-select" name="kind" aria-label="Type"><option value="">All types</option>{% for k, label in kinds %}<option value="{{ k }}" {{ 'selected' if kind == k }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-3"><input class="form-control" name="q" value="{{ q }}" placeholder="Search title" aria-label="Search"></div>
+  <div class="col-12 col-md-auto"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+{% if page.items %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Title</th><th>Batch</th><th>Type</th><th>Shared</th><th></th></tr></thead>
+  <tbody>
+  {% for x in page.items %}
+    <tr>
+      <td class="person-td" data-label="Title"><strong>{{ x.title }}</strong>{% if x.description %}<div class="small text-muted">{{ x.description }}</div>{% endif %}</td>
+      <td data-label="Batch" class="small">{{ x.batch.name }}</td>
+      <td data-label="Type">{% if x.kind == 'link' %}<span class="badge text-bg-info">Link</span>{% else %}<span class="badge text-bg-secondary">File</span> <span class="small text-muted">{{ human_size(x.size) }}</span>{% endif %}</td>
+      <td data-label="Shared" class="small">{{ x.created_at.strftime('%d %b %Y') }}</td>
+      <td class="actions text-end">
+        {% if x.kind == 'link' %}<a class="btn btn-sm btn-outline-secondary" href="{{ x.url }}" target="_blank" rel="noopener noreferrer">Open</a>
+        {% else %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('materials.file', mid=x.id) }}" target="_blank" rel="noopener">Download</a>{% endif %}
+        {% if current_user.has_permission('materials.edit') %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('materials.edit', mid=x.id) }}">Edit</a>{% endif %}
+        {% if current_user.has_permission('materials.delete') %}
+        <form method="post" action="{{ url_for('materials.delete', mid=x.id) }}" class="d-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-danger" data-confirm="Students will no longer see this." data-title="Remove material?" data-ok-label="Remove">Remove</button></form>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ m.pager(page, 'materials.index', args) }}
+{% else %}{{ m.empty_state("No materials yet", "Share notes, question papers or useful links with a batch.", url_for('materials.new') if can_post and current_user.has_permission('materials.create') else None, "Share material") }}{% endif %}
+{% endblock %}

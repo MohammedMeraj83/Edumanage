@@ -1,0 +1,32 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Live board{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Live board</h1><div class="text-muted small mt-1">{{ today.strftime('%A, %d %b %Y') }} · refreshes every minute</div></div>
+  {% if branches %}<form method="get" class="m-0"><select class="form-select" name="branch" onchange="this.form.submit()" aria-label="Branch"><option value="">All branches</option>{% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if branch_id == b.id }}>{{ b.name }}</option>{% endfor %}</select></form>{% endif %}
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md"><div class="panel-card h-100"><div class="stat-value">{{ total }}</div><div class="stat-label">Lectures today</div></div></div>
+  <div class="col-6 col-md"><div class="panel-card h-100"><div class="stat-value">{{ tally.get('running', 0) }}</div><div class="stat-label">Running now</div></div></div>
+  <div class="col-6 col-md"><div class="panel-card h-100"><div class="stat-value">{{ tally.get('completed', 0) }}</div><div class="stat-label">Completed</div></div></div>
+  <div class="col-6 col-md"><div class="panel-card h-100"><div class="stat-value text-danger">{{ tally.get('late', 0) }}</div><div class="stat-label">Teacher late</div></div></div>
+  <div class="col-12 col-md"><div class="panel-card h-100"><div class="stat-value text-danger">{{ tally.get('missed', 0) }}</div><div class="stat-label">Missed</div></div></div>
+</div>
+{% for r in rows %}
+<a class="panel-card branch-card mb-2 d-block" href="{{ url_for('attendance.session_view', session_id=r.s.id) }}">
+  <div class="d-flex justify-content-between align-items-start gap-2">
+    <div>
+      <div class="fw-bold">{{ r.s.start_at|localtime('%I:%M %p') }} – {{ r.s.end_at|localtime('%I:%M %p') }} · {{ r.s.batch.name }}</div>
+      <div class="small text-muted">{{ r.s.teacher.full_name }}{% if r.s.room %} · {{ r.s.room.name }}{% endif %}{% if branch_id is none and branches %} · {{ r.s.branch.name }}{% endif %}</div>
+    </div>
+    <span class="badge text-bg-{{ r.css }}">{{ r.label }}</span>
+  </div>
+  <div class="small mt-2 text-muted">
+    {% if r.s.checkin_at %}Arrived {{ r.s.checkin_at|localtime('%I:%M %p') }}{% if r.late %} · <span class="text-danger">{{ r.late }} min late</span>{% else %} · on time{% endif %}{% endif %}
+    {% if r.s.attendance_submitted_at %} · Present {{ r.present }} · Absent {{ r.absent }} · Location-verified {{ r.verified }}{% elif r.s.checkin_at %} · attendance not taken yet{% endif %}
+  </div>
+</a>
+{% else %}{{ m.empty_state("No lectures today", "Lectures appear here from the batch timetables.", None, None) }}{% endfor %}
+{% endblock %}
+{% block page_scripts %}<script>setTimeout(function () { location.reload(); }, 60000);</script>{% endblock %}

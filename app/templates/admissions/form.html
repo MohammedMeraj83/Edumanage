@@ -1,0 +1,33 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit application' if adm else 'New admission' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit ' ~ adm.full_name if adm else 'New admission' }}</h1></div>
+<form method="post" enctype="multipart/form-data" class="panel-card" novalidate>
+  {{ form.hidden_tag() }}
+  {% if form.branch_id or form.session_id %}
+  <div class="section-title">Admission</div>
+  <div class="row g-3 mb-4">
+    {% if form.branch_id %}{{ m.field(form.branch_id, "col-12 col-md-6", cls="form-select") }}{% endif %}
+    {% if form.session_id %}{{ m.field(form.session_id, "col-12 col-md-6", cls="form-select") }}{% endif %}
+  </div>
+  {% endif %}
+
+  {% include "students/_person_fields.html" %}
+
+  {% if form.approve_now %}
+  <div class="row g-3 mt-1"><div class="col-12">
+    <div class="form-check">
+      {{ form.approve_now(class="form-check-input") }}
+      {{ form.approve_now.label(class="form-check-label") }}
+    </div>
+    <div class="form-text">Creates the student record straight away. Documents can be added afterwards.</div>
+  </div></div>
+  {% endif %}
+
+  <div class="d-flex gap-2 mt-4 stack-sm">
+    <button class="btn btn-em">{{ 'Save changes' if adm else 'Save application' }}</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admissions.detail', admission_id=adm.id) if adm else url_for('admissions.list_admissions') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

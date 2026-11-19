@@ -1,0 +1,11 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}{{ 'Edit subject' if item else 'New subject' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit ' ~ item.name if item else 'Add a subject' }}</h1></div>
+<form method="post" class="panel-card" style="max-width:520px" novalidate>
+  {{ form.hidden_tag() }}
+  <div class="row g-3">{{ m.field(form.name, "col-12") }}{{ m.check(form.is_active) }}</div>
+  <div class="d-flex gap-2 mt-4 stack-sm"><button class="btn btn-em">Save</button><a class="btn btn-outline-secondary" href="{{ url_for('academics.subjects') }}">Cancel</a></div>
+</form>
+{% endblock %}

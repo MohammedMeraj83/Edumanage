@@ -1,0 +1,40 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}Branches{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Branches</h1>
+  <a class="btn btn-em" href="{{ url_for('branches.new_branch') }}"><i class="bi bi-plus-lg"></i> Add branch</a>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-12 col-md-6"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search name, code or city" aria-label="Search branches"></div>
+  <div class="col-8 col-md-3">
+    <select class="form-select" name="status" aria-label="Status">
+      {% for v, l in [('all','All branches'),('active','Active only'),('inactive','Inactive only')] %}<option value="{{ v }}" {{ 'selected' if status == v }}>{{ l }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-4 col-md-3"><button class="btn btn-outline-secondary w-100">Filter</button></div>
+</form>
+
+{% if branches %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Branch</th><th>Code</th><th>City</th><th>Admins</th><th>Users</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for b in branches %}
+    <tr>
+      <td data-label="Branch"><strong>{{ b.name }}</strong>{% if b.is_main %} <span class="badge text-bg-secondary">Main</span>{% endif %}</td>
+      <td data-label="Code">{{ b.code }}</td>
+      <td data-label="City">{{ b.city or '—' }}</td>
+      <td data-label="Admins">{{ admins.get(b.id, 0) }}</td>
+      <td data-label="Users">{{ users.get(b.id, 0) }}</td>
+      <td data-label="Status">{{ m.status_badge(b.is_active) }}</td>
+      <td class="actions text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('branches.detail', branch_id=b.id) }}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  {{ m.empty_state("No branches found", "Try a different search, or add a new branch.", url_for('branches.new_branch'), "Add branch") }}
+{% endif %}
+{% endblock %}

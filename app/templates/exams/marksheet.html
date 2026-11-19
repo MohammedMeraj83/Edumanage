@@ -1,0 +1,36 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Marksheet{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Marksheet</h1><div class="text-muted small mt-1">{{ exam.name }} · {{ exam.session.name }}</div></div>
+  <div class="d-flex flex-wrap gap-2 stack-sm">
+    <a class="btn btn-outline-secondary" href="{{ back_url }}">Back</a>
+    <a class="btn btn-outline-secondary" href="#" onclick="window.print();return false;"><i class="bi bi-printer"></i> Print</a>
+    <a class="btn btn-em" href="{{ pdf_url }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>
+</div>
+<div class="panel-card">
+  <div class="text-center mb-3"><div class="fw-bold fs-5">{{ inst.name if inst else institute_name }}</div>
+    <div class="small text-muted">{{ branch.name }}{% if branch.city %}, {{ branch.city }}{% endif %}</div></div>
+  <dl class="kv"><dt>Student</dt><dd>{{ student.full_name }}</dd><dt>Student ID</dt><dd>{{ student.student_code }}</dd><dt>Class</dt><dd>{{ student.class_name }}</dd>
+    <dt>Exam</dt><dd>{{ exam.name }} ({{ exam.type_label }})</dd></dl>
+  <div class="table-responsive"><table class="table align-middle">
+    <thead><tr><th>Subject</th><th>Date</th><th class="text-end">Max</th><th class="text-end">Pass</th><th class="text-end">Obtained</th><th>Grade</th><th>Result</th></tr></thead>
+    <tbody>
+    {% for s in row.subjects %}
+      <tr><td>{{ s.paper.subject_name }}{% if s.remark %}<div class="small text-muted">{{ s.remark }}</div>{% endif %}</td><td>{{ s.paper.exam_date.strftime('%d %b %Y') }}</td>
+        <td class="text-end">{{ fmt(s.max) }}</td><td class="text-end">{{ fmt(s.pass_marks) }}</td>
+        <td class="text-end fw-bold">{{ 'AB' if s.absent else fmt(s.obtained) }}</td>
+        <td><span class="badge text-bg-{{ grade_colors.get(s.grade, 'secondary') }}">{{ s.grade }}</span></td>
+        <td>{{ 'Pass' if s.passed else 'Fail' }}</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="2">Total</td><td class="text-end">{{ fmt(row.max) }}</td><td></td><td class="text-end">{{ fmt(row.obtained) }}</td><td>{{ row.grade }}</td><td>{{ 'Pass' if row.passed else 'Fail' }}</td></tr></tfoot>
+  </table></div>
+  <div class="row g-3 text-center">
+    <div class="col-4"><div class="stat-value">{{ row.percent }}%</div><div class="stat-label">Percentage</div></div>
+    <div class="col-4"><div class="stat-value">{{ row.rank }}</div><div class="stat-label">Rank</div></div>
+    <div class="col-4"><div class="stat-value">{{ 'PASS' if row.passed else 'FAIL' }}</div><div class="stat-label">Result</div></div>
+  </div>
+</div>
+{% endblock %}

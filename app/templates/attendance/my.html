@@ -1,0 +1,24 @@
+{% extends "base/admin_base.html" %}
+{% import "components/macros.html" as m %}
+{% block page_title %}My lectures{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Today · {{ today.strftime('%A, %d %b') }}</h1></div>
+{% for s, key, label, css, late in today_rows %}
+<a class="panel-card branch-card mb-2 d-block" href="{{ url_for('attendance.session_view', session_id=s.id) }}">
+  <div class="d-flex justify-content-between gap-2"><div><div class="fw-bold">{{ s.start_at|localtime('%I:%M %p') }} – {{ s.end_at|localtime('%I:%M %p') }}</div><div>{{ s.batch.name }}{% if s.room %} · {{ s.room.name }}{% endif %}</div></div><span class="badge text-bg-{{ css }} align-self-start">{{ label }}</span></div>
+</a>
+{% else %}{{ m.empty_state("No lectures today", "Enjoy the free day.", None, None) }}{% endfor %}
+
+<h2 class="h5 fw-bold mt-4 mb-3">Last 14 days</h2>
+{% if past_rows %}
+<table class="table table-cards align-middle">
+  <thead><tr><th>Date</th><th>Batch</th><th>Time</th><th>Arrived</th><th>Status</th></tr></thead>
+  <tbody>{% for s, key, label, css, late in past_rows %}
+    <tr><td data-label="Date">{{ s.lecture_date.strftime('%d %b') }}</td><td data-label="Batch"><a href="{{ url_for('attendance.session_view', session_id=s.id) }}">{{ s.batch.name }}</a></td>
+      <td data-label="Time">{{ s.start_at|localtime('%I:%M %p') }}</td>
+      <td data-label="Arrived">{{ s.checkin_at|localtime('%I:%M %p') if s.checkin_at else '—' }}{% if late %} <span class="text-danger small">({{ late }} min late)</span>{% endif %}</td>
+      <td data-label="Status"><span class="badge text-bg-{{ css }}">{{ label }}</span></td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}<p class="text-muted">Nothing yet.</p>{% endif %}
+{% endblock %}

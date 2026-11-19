@@ -1,0 +1,11 @@
+{% extends "base/admin_base.html" %}
+{% block page_title %}Fee settings{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Fee settings</h1></div>
+<form method="post" class="panel-card" style="max-width:520px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="form-label" for="due_day">Monthly fee is due on day</label>
+  <input class="form-control" id="due_day" name="due_day" type="number" min="1" max="28" value="{{ due_day }}" required>
+  <div class="form-text">For monthly batches, each month's fee is due on this day of the month (1–28). The first month is due the day the student joins if that is later.</div>
+  <button class="btn btn-em mt-3">Save</button>
+</form>
+{% endblock %}
