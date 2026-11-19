@@ -127,7 +127,6 @@ def stream():
             Notification.id > last_id,
         ).order_by(Notification.id).limit(50).all()
 
-        yield "retry: 15000\n\n"
         for item in rows:
             data = json.dumps({
                 "id": item.id,
@@ -136,7 +135,8 @@ def stream():
                 "url": url_for("notifications.detail", notification_id=item.id),
             })
             yield f"id: {item.id}\nevent: notification\ndata: {data}\n\n"
-        yield ": keep-alive\n\n"
+        if not rows:
+            yield ": keep-alive\nretry: 15000\n\n"
         db.session.remove()
 
     response = Response(events(), mimetype="text/event-stream")

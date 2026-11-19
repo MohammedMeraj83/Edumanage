@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta
-from flask import Flask, redirect, request, url_for, render_template, send_from_directory, abort, make_response
+from flask import Flask, redirect, request, url_for, render_template, send_from_directory, abort, make_response, Response
 from flask_login import current_user
 from config import config
 from extensions import db, migrate, login_manager, csrf, limiter, mail
@@ -82,7 +82,9 @@ def _register_blueprints(app):
         """Public images only (institute logo). Private uploads get permission-checked routes later."""
         if folder not in PUBLIC_MEDIA_FOLDERS:
             abort(404)
-        return send_from_directory(os.path.join(app.config["UPLOAD_FOLDER"], folder), filename)
+        response = send_from_directory(os.path.join(app.config["UPLOAD_FOLDER"], folder), filename)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
 
     @app.route("/sw.js")
     def service_worker():
@@ -93,40 +95,94 @@ def _register_blueprints(app):
         response.headers["Cache-Control"] = "no-cache"
         return response
 
+    @app.route("/robots.txt")
+    def robots_txt():
+        content = "User-agent: *\nDisallow: /owner/\nDisallow: /branch-admin/\nDisallow: /admin/\nDisallow: /accountant/\nDisallow: /teacher/\nDisallow: /student/\nDisallow: /parent/\nAllow: /\n"
+        return Response(content, mimetype="text/plain")
 
-_cached_institute = None
+
+_cached_institute_data = None
 _cached_institute_at = 0
 
 
-def _get_institute():
-    global _cached_institute, _cached_institute_at
+def _get_institute_data():
+    global _cached_institute_data, _cached_institute_at
     import time
     now = time.time()
-    if _cached_institute is None or (now - _cached_institute_at) > 60:
+    if _cached_institute_data is None or (now - _cached_institute_at) > 120:
         from app.models import Institute
         try:
-            _cached_institute = Institute.query.first()
+            inst = Institute.query.first()
+            if inst:
+                _cached_institute_data = {
+                    "name": inst.name,
+                    "logo": inst.logo,
+                    "code": inst.code,
+                }
+            else:
+                _cached_institute_data = {"name": "EduManage", "logo": None, "code": "EM"}
             _cached_institute_at = now
         except Exception:
-            return None
-    return _cached_institute
+            return _cached_institute_data or {"name": "EduManage", "logo": None, "code": "EM"}
+    return _cached_institute_data
+
+
+def invalidate_institute_cache():
+    global _cached_institute_data, _cached_institute_at
+    _cached_institute_data = None
+    _cached_institute_at = 0
 
 
 def _register_hooks(app):
     @app.before_request
     def force_password_change():
-        if (current_user.is_authenticated and current_user.must_change_password
-                and request.endpoint not in (
-                    "auth.change_password", "auth.logout", "static", "service_worker"
-                )):
+        path = request.path or ""
+        endpoint = request.endpoint or ""
+        # Fast exit for static files, media, service worker, and public assets WITHOUT touching current_user or DB
+        if (
+            path.startswith("/static/")
+            or path.startswith("/media/")
+            or path in ("/sw.js", "/robots.txt", "/favicon.ico")
+            or endpoint in ("auth.change_password", "auth.logout", "static", "service_worker", "media", "robots_txt")
+            or endpoint.startswith("static")
+        ):
+            return None
+
+        if current_user.is_authenticated and current_user.must_change_password:
             return redirect(url_for("auth.change_password"))
+
+    @app.after_request
+    def optimize_response(response):
+        path = request.path or ""
+        # 1. Aggressive caching for static and media assets
+        if path.startswith("/static/") or path.startswith("/media/"):
+            if "Cache-Control" not in response.headers:
+                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+
+        # 2. Gzip compression (when accepted by client and not in testing)
+        if not app.testing and response.status_code < 300 and not response.direct_passthrough:
+            accept_encoding = request.headers.get("Accept-Encoding", "").lower()
+            if "gzip" in accept_encoding and "Content-Encoding" not in response.headers:
+                ctype = response.headers.get("Content-Type", "")
+                if any(t in ctype for t in ("text/html", "text/css", "application/javascript", "application/json", "image/svg+xml", "text/plain")):
+                    data = response.get_data()
+                    if len(data) > 500:
+                        import gzip
+                        compressed = gzip.compress(data, compresslevel=6)
+                        if len(compressed) < len(data):
+                            response.set_data(compressed)
+                            response.headers["Content-Encoding"] = "gzip"
+                            response.headers["Content-Length"] = len(compressed)
+                            response.headers["Vary"] = "Accept-Encoding"
+
+        return response
 
     @app.context_processor
     def inject_globals():
         from app.models import Notification
         from sqlalchemy import func
+        inst_data = _get_institute_data()
         try:
-            inst = _get_institute()
             if current_user.is_authenticated and current_user.has_permission("notifications.view"):
                 res = db.session.query(
                     func.count(Notification.id).filter(Notification.read_at.is_(None)),
@@ -139,12 +195,11 @@ def _register_hooks(app):
                 notification_cursor = 0
         except Exception:  # DB not ready (e.g. before migrations)
             db.session.rollback()
-            inst = None
             unread_notification_count = 0
             notification_cursor = 0
         return {
-            "institute_name": inst.name if inst else "EduManage",
-            "institute_logo": inst.logo if inst else None,
+            "institute_name": inst_data.get("name", "EduManage"),
+            "institute_logo": inst_data.get("logo"),
             "unread_notification_count": unread_notification_count,
             "notification_cursor": notification_cursor,
             "vapid_public_key": app.config["VAPID_PUBLIC_KEY"],

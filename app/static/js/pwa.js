@@ -262,12 +262,6 @@
     });
   }
 
-  if ("serviceWorker" in navigator) {
-    serviceWorkerReady().catch(function (error) {
-      console.error("Could not register the EduManage service worker.", error);
-    });
-  }
-
   if (installButton) {
     if (isInstalled()) {
       installButton.hidden = true;
@@ -296,6 +290,22 @@
     if (installButton) installButton.hidden = true;
   });
 
-  startLiveUpdates();
-  setupPush();
+  // Defer non-critical background polling and push subscription setup until after page load
+  function initBackgroundTasks() {
+    if ("serviceWorker" in navigator) {
+      serviceWorkerReady().catch(function (error) {
+        console.error("Could not register the EduManage service worker.", error);
+      });
+    }
+    startLiveUpdates();
+    setupPush();
+  }
+
+  if (document.readyState === "complete") {
+    setTimeout(initBackgroundTasks, 800);
+  } else {
+    window.addEventListener("load", function () {
+      setTimeout(initBackgroundTasks, 800);
+    });
+  }
 }());

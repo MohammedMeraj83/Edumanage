@@ -28,7 +28,7 @@
         <button id="push-enable" class="topbar-icon-btn" type="button" aria-label="Enable phone notifications" title="Enable phone notifications"><i class="bi bi-phone-vibrate"></i><span id="push-button-label" class="visually-hidden">Phone alerts</span></button>
         {% endif %}
         <div class="dropdown">
-          <button class="user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu">
+          <button class="user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ current_user.full_name }} account menu">
             <span class="avatar-badge">{{ (current_user.full_name or current_user.username or 'U')[:1]|upper }}</span>
             <span class="d-none d-sm-inline">{{ current_user.full_name }}</span>
             <i class="bi bi-chevron-down d-none d-sm-inline text-muted" style="font-size:0.75rem;"></i>
