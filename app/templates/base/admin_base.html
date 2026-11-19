@@ -23,9 +23,9 @@
           <span id="unread-notification-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger" {% if not unread_notification_count %}hidden{% endif %}>{{ unread_notification_count }}</span>
         </a>
         {% endif %}
-        <button id="pwa-install" class="topbar-icon-btn" type="button" aria-label="Install app" title="Install app" hidden><i class="bi bi-download"></i><span class="d-none d-lg-inline ms-1">Install app</span></button>
+        <button id="pwa-install" class="topbar-icon-btn" type="button" aria-label="Install app" title="Install app" hidden><i class="bi bi-download"></i><span class="visually-hidden">Install app</span></button>
         {% if current_user.has_permission('notifications.view') %}
-        <button id="push-enable" class="topbar-icon-btn" type="button" aria-label="Enable phone notifications" title="Enable phone notifications"><i class="bi bi-phone-vibrate"></i><span id="push-button-label" class="d-none d-lg-inline ms-1">Phone alerts</span></button>
+        <button id="push-enable" class="topbar-icon-btn" type="button" aria-label="Enable phone notifications" title="Enable phone notifications"><i class="bi bi-phone-vibrate"></i><span id="push-button-label" class="visually-hidden">Phone alerts</span></button>
         {% endif %}
         <div class="dropdown">
           <button class="user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu">

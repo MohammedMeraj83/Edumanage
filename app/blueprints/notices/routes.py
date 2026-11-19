@@ -122,25 +122,22 @@ def stream():
     @stream_with_context
     def events():
         last_id = cursor
-        deadline = time.monotonic() + 55
-        while time.monotonic() < deadline:
-            rows = Notification.query.filter(
-                Notification.user_id == user_id,
-                Notification.id > last_id,
-            ).order_by(Notification.id).limit(50).all()
-            for item in rows:
-                data = json.dumps({
-                    "id": item.id,
-                    "title": item.notice.title,
-                    "body": item.notice.body[:240],
-                    "url": url_for("notifications.detail", notification_id=item.id),
-                })
-                yield f"id: {item.id}\nevent: notification\ndata: {data}\n\n"
-                last_id = item.id
-            db.session.remove()
-            if not rows:
-                yield ": keep-alive\n\n"
-                time.sleep(3)
+        rows = Notification.query.filter(
+            Notification.user_id == user_id,
+            Notification.id > last_id,
+        ).order_by(Notification.id).limit(50).all()
+
+        yield "retry: 15000\n\n"
+        for item in rows:
+            data = json.dumps({
+                "id": item.id,
+                "title": item.notice.title,
+                "body": item.notice.body[:240],
+                "url": url_for("notifications.detail", notification_id=item.id),
+            })
+            yield f"id: {item.id}\nevent: notification\ndata: {data}\n\n"
+        yield ": keep-alive\n\n"
+        db.session.remove()
 
     response = Response(events(), mimetype="text/event-stream")
     response.headers["Cache-Control"] = "no-cache"

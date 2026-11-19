@@ -22,16 +22,26 @@ def dashboard():
         if role_name == BRANCH_ADMIN:
             admins[branch_id] = n
 
+    # Single round-trip aggregation for dashboard stats
+    counts = db.session.query(
+        db.select(func.count(User.id)).filter(User.is_active_user.is_(True)).scalar_subquery(),
+        db.select(func.count(Student.id)).filter(Student.status == "active").scalar_subquery(),
+        db.select(func.count(Teacher.id)).filter(Teacher.status == "active").scalar_subquery(),
+        db.select(func.count(Staff.id)).filter(Staff.status == "active").scalar_subquery(),
+        db.select(func.count(Parent.id)).filter(Parent.status == "active").scalar_subquery(),
+        db.select(func.count(Batch.id)).filter(Batch.status == "active").scalar_subquery(),
+    ).first()
+
     stats = {
         "branches": sum(1 for b in branches if b.is_active),
         "branches_total": len(branches),
-        "users": User.query.filter(User.is_active_user.is_(True)).count(),
+        "users": counts[0] if counts else 0,
         "admins": sum(admins.values()),
-        "students": Student.query.filter_by(status="active").count(),
-        "teachers": Teacher.query.filter_by(status="active").count(),
-        "staff": Staff.query.filter_by(status="active").count(),
-        "parents": Parent.query.filter_by(status="active").count(),
-        "batches": Batch.query.filter_by(status="active").count(),
+        "students": counts[1] if counts else 0,
+        "teachers": counts[2] if counts else 0,
+        "staff": counts[3] if counts else 0,
+        "parents": counts[4] if counts else 0,
+        "batches": counts[5] if counts else 0,
     }
     return render_template(
         "owner/dashboard.html", stats=stats, branches=branches, admins=admins, users=users,

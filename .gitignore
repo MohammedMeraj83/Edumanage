@@ -8,6 +8,8 @@ uploads/*
 generated/*
 backups/*
 !uploads/.gitkeep
+!uploads/institute/
+!uploads/institute/*
 !generated/.gitkeep
 !backups/.gitkeep
 .pytest_cache/

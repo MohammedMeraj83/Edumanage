@@ -102,7 +102,7 @@
   ] %}
 {% endif %}
 <div class="brand">
-  {% if institute_logo %}<img src="{{ url_for('media', folder='institute', filename=institute_logo) }}" alt="">{% endif %}
+  {% if institute_logo %}<img src="{{ url_for('media', folder='institute', filename=institute_logo) }}" alt="" onerror="this.style.display='none'">{% endif %}
   <div class="text-white fw-bold lh-sm">{{ institute_name }}<small class="d-block fw-normal" style="color:#8fa0bf;font-size:.78rem">{{ current_user.role.display_name }}</small></div>
 </div>
 <nav class="nav flex-column gap-1" aria-label="Main">

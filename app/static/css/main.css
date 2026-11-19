@@ -409,7 +409,7 @@ textarea.form-control {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.65rem;
   flex-wrap: nowrap !important;
 }
 
@@ -445,7 +445,9 @@ textarea.form-control {
   width: 38px;
   height: 38px;
   min-width: 38px;
+  max-width: 38px;
   min-height: 38px;
+  max-height: 38px;
   padding: 0;
   display: inline-flex;
   align-items: center;

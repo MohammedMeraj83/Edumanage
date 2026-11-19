@@ -94,6 +94,24 @@ def _register_blueprints(app):
         return response
 
 
+_cached_institute = None
+_cached_institute_at = 0
+
+
+def _get_institute():
+    global _cached_institute, _cached_institute_at
+    import time
+    now = time.time()
+    if _cached_institute is None or (now - _cached_institute_at) > 60:
+        from app.models import Institute
+        try:
+            _cached_institute = Institute.query.first()
+            _cached_institute_at = now
+        except Exception:
+            return None
+    return _cached_institute
+
+
 def _register_hooks(app):
     @app.before_request
     def force_password_change():
@@ -105,17 +123,17 @@ def _register_hooks(app):
 
     @app.context_processor
     def inject_globals():
-        from app.models import Institute, Notification
+        from app.models import Notification
+        from sqlalchemy import func
         try:
-            inst = Institute.query.first()
+            inst = _get_institute()
             if current_user.is_authenticated and current_user.has_permission("notifications.view"):
-                unread_notification_count = Notification.query.filter_by(
-                    user_id=current_user.id, read_at=None
-                ).count()
-                notification_cursor = (
-                    db.session.query(db.func.max(Notification.id))
-                    .filter_by(user_id=current_user.id).scalar() or 0
-                )
+                res = db.session.query(
+                    func.count(Notification.id).filter(Notification.read_at.is_(None)),
+                    func.coalesce(func.max(Notification.id), 0)
+                ).filter(Notification.user_id == current_user.id).first()
+                unread_notification_count = (res[0] if res else 0) or 0
+                notification_cursor = (res[1] if res else 0) or 0
             else:
                 unread_notification_count = 0
                 notification_cursor = 0
@@ -239,8 +257,14 @@ def _register_cli(app):
         click.echo(f"VAPID_PRIVATE_KEY={private_key}")
 
 
+_db_initialized = False
+
+
 def _auto_init_db(app):
     """Auto-create tables and seed default data if database is fresh."""
+    global _db_initialized
+    if _db_initialized:
+        return
     with app.app_context():
         try:
             from sqlalchemy import inspect
@@ -249,6 +273,7 @@ def _auto_init_db(app):
                 db.create_all()
                 from app.services.seed_service import seed_all
                 seed_all()
+            _db_initialized = True
         except Exception as e:
             app.logger.warning(f"Auto-init DB skipped: {e}")
 
