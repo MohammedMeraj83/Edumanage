@@ -21,18 +21,32 @@ def _get_database_uri():
         if db_url.startswith("postgres://"):
             db_url = db_url.replace("postgres://", "postgresql://", 1)
         return db_url
-    if os.getenv("DB_HOST") or os.getenv("DB_NAME") or os.getenv("DB_USER"):
-        return _mysql_uri()
+
+    db_host = os.getenv("DB_HOST", "")
+    is_cloud = bool(os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID") or os.getenv("DYNO") or os.getenv("RAILWAY_ENVIRONMENT"))
+
+    # In cloud environments, 'localhost' MySQL is not running.
+    # Only use MySQL if a real remote host is specified (or running locally).
+    if is_cloud:
+        if db_host and db_host.lower() not in ("localhost", "127.0.0.1", ""):
+            return _mysql_uri()
+    else:
+        if os.getenv("DB_HOST") or os.getenv("DB_NAME") or os.getenv("DB_USER"):
+            return _mysql_uri()
+
     instance_dir = os.path.join(BASE_DIR, "instance")
     os.makedirs(instance_dir, exist_ok=True)
     return f"sqlite:///{os.path.join(instance_dir, 'edumanage.db')}"
 
 
+_db_uri = _get_database_uri()
+
+
 class BaseConfig:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
-    SQLALCHEMY_DATABASE_URI = _get_database_uri()
+    SQLALCHEMY_DATABASE_URI = _db_uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
+    SQLALCHEMY_ENGINE_OPTIONS = {} if _db_uri.startswith("sqlite") else {"pool_pre_ping": True, "pool_recycle": 280}
 
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
     GENERATED_FOLDER = os.path.join(BASE_DIR, "generated")

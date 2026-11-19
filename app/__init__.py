@@ -25,6 +25,7 @@ def create_app(config_name=None):
     _register_hooks(app)
     _register_errors(app)
     _register_cli(app)
+    _auto_init_db(app)
     return app
 
 
@@ -236,6 +237,20 @@ def _register_cli(app):
         click.echo("Add these values to .env and keep the private key secret:")
         click.echo(f"VAPID_PUBLIC_KEY={base64.urlsafe_b64encode(public_key).decode().rstrip('=')}")
         click.echo(f"VAPID_PRIVATE_KEY={private_key}")
+
+
+def _auto_init_db(app):
+    """Auto-create tables and seed default data if database is fresh."""
+    with app.app_context():
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            if not inspector.has_table("institutes"):
+                db.create_all()
+                from app.services.seed_service import seed_all
+                seed_all()
+        except Exception as e:
+            app.logger.warning(f"Auto-init DB skipped: {e}")
 
 
 # Allow WSGI servers (like Gunicorn 'gunicorn app:app') to load the Flask application directly
