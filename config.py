@@ -15,9 +15,22 @@ def _mysql_uri():
     return f"mysql+pymysql://{user}:{pwd}@{host}:{port}/{name}?charset=utf8mb4"
 
 
+def _get_database_uri():
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        return db_url
+    if os.getenv("DB_HOST") or os.getenv("DB_NAME") or os.getenv("DB_USER"):
+        return _mysql_uri()
+    instance_dir = os.path.join(BASE_DIR, "instance")
+    os.makedirs(instance_dir, exist_ok=True)
+    return f"sqlite:///{os.path.join(instance_dir, 'edumanage.db')}"
+
+
 class BaseConfig:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL") or _mysql_uri()
+    SQLALCHEMY_DATABASE_URI = _get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 

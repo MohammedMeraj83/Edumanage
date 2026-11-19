@@ -236,3 +236,16 @@ def _register_cli(app):
         click.echo("Add these values to .env and keep the private key secret:")
         click.echo(f"VAPID_PUBLIC_KEY={base64.urlsafe_b64encode(public_key).decode().rstrip('=')}")
         click.echo(f"VAPID_PRIVATE_KEY={private_key}")
+
+
+# Allow WSGI servers (like Gunicorn 'gunicorn app:app') to load the Flask application directly
+def __getattr__(name):
+    if name == "app":
+        global _application
+        try:
+            return _application
+        except NameError:
+            _application = create_app()
+            return _application
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+

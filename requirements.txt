@@ -18,4 +18,5 @@ pandas
 qrcode
 reportlab
 gunicorn
+psycopg2-binary
 pytest
