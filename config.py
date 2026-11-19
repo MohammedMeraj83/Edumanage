@@ -15,15 +15,39 @@ def _mysql_uri():
     return f"mysql+pymysql://{user}:{pwd}@{host}:{port}/{name}?charset=utf8mb4"
 
 
+def _postgres_uri():
+    user = os.getenv("DB_USER", "postgres")
+    pwd = quote_plus(os.getenv("DB_PASSWORD", ""))
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "5432")
+    name = os.getenv("DB_NAME", "defaultdb")
+    sslmode = "require" if "aivencloud.com" in host else os.getenv("DB_SSLMODE", "prefer")
+    return f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{name}?sslmode={sslmode}"
+
+
 def _get_database_uri():
     db_url = os.getenv("DATABASE_URL")
     if db_url:
         if db_url.startswith("postgres://"):
-            db_url = db_url.replace("postgres://", "postgresql://", 1)
+            db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
+            db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
         return db_url
 
     db_host = os.getenv("DB_HOST", "")
+    db_port = str(os.getenv("DB_PORT", ""))
+    db_type = os.getenv("DB_TYPE", "").lower()
     is_cloud = bool(os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID") or os.getenv("DYNO") or os.getenv("RAILWAY_ENVIRONMENT"))
+
+    # Check if configured for PostgreSQL
+    is_postgres = (
+        db_type in ("postgres", "postgresql")
+        or "aivencloud.com" in db_host
+        or db_port in ("25762", "5432")
+    )
+
+    if is_postgres:
+        return _postgres_uri()
 
     # In cloud environments, 'localhost' MySQL is not running.
     # Only use MySQL if a real remote host is specified (or running locally).
