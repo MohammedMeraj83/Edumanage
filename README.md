@@ -252,4 +252,5 @@ pytest
 3. Call `log_action()` for create / update / delete of important records.
 4. Never delete financial records — reverse them with a new entry.
 
- 
+ #   E d u m a n a g e  
+ 
